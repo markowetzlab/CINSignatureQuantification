@@ -1,0 +1,51 @@
+Package: CINSignatureQuantification
+Title: Simple and quick measuring of copy number signatures in cancers
+Version: 0.0.9
+Authors@R: 
+    c(person(given = "Philip S",
+           family = "Smith",
+           role = c("aut"),
+           email = "philip.smith@cruk.cam.ac.uk",
+           comment = c(ORCID = "0000-0002-9306-1747")),
+    person(given = "Ruben M",
+           family = "Drews",
+           role = c("aut", "cre"),
+           email = "Ruben.Drews@cruk.cam.ac.uk",
+           comment = c(ORCID = "0000-0001-7360-4970")),
+    person(given = "Cancer Research UK",
+           role = c("cph", "fnd"),
+           email = "Florian.Markowetz@cruk.cam.ac.uk",
+           comment = c(ORCID = "0000-0002-2784-5308"))
+    )
+Description: Allowing the simple and quick quantification of copy number signatures in 
+    cancer samples from copy number profiles. The signatures are a readout of mutational 
+    processes resulting in chromosomal instability (CIN). It is thought as a one-stop 
+    solution, combining multiple published solutions. At the moment the methods from 
+    Drews et al. (Nature, 2022) and Macintyre et al. (Nature Genetics, 2018) are included.
+URL: https://github.com/markowetzlab/CINSignatureQuantification
+BugReports: https://github.com/markowetzlab/CINSignatureQuantification/issues
+biocViews: 
+Depends:
+    R (>= 4.0.0)
+Imports:
+    base,
+    Biobase (>= 2.46.0),
+    data.table (>= 1.14),
+    graphics (>= 1.3.7),
+    limSolve (>= 1.5.6),
+    methods,
+    parallel,
+    stats,
+    stringr (>= 1.4),
+    utils
+Suggests:
+    doParallel (>= 1.0.16),
+    foreach (>= 1.5.1),
+    knitr,
+    rmarkdown
+License: ASL + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
+VignetteBuilder: knitr

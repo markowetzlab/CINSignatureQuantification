@@ -1,0 +1,119 @@
+---
+title: "CINSignaturesQuantification_vignette"
+
+---
+title: "CINSignatureQuantification - Simple and quick measuring of copy number signatures in cancers"
+author: "Philip Smith <cre>, Ruben Drews <cre, auth>, Cancer Research UK <cph, fnd>"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{CINSignaturesQuantification_vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_lib}
+#library(CINSignatureQuantification)
+```
+
+```{r test_data}
+#test_data = readRDS("../inst//TCGA_478_Samples_SNP6_GOLD.rds")
+#head(test_data)
+```
+
+### Load data
+
+```{r load_data}
+#myData = createCignatures(data = test_data,experimentName = "TCGA/PCAWG overlap with dCIN")
+#myData
+```
+
+### Class features
+
+#### experiment class slot
+
+```{r exp_data}
+#getExperiment(object = myData)
+```
+
+#### Samples
+
+```{r get_samples}
+#samples = getSamples(object = myData)
+#samples[1:10]
+```
+
+#### Segment data
+
+```{r get_segs}
+#segs = getSegments(object = myData)
+#head(segs)
+```
+#### Sample features
+
+```{r get_sampleFeats}
+#sampleFeats = getSamplefeatures(object = myData)
+#head(sampleFeats)
+```
+
+```{r add_sampleFeats}
+#more_sample_data = read.table("data/test_sample_feature_data.tsv",
+#                               header = TRUE,
+ #                              sep="\t")
+#head(more_sample_data)
+#myData = addsampleFeatures(object = myData,sample.data = more_sample_data,id.col = "sample")
+#sampleFeats = getSamplefeatures(object = myData)
+#head(sampleFeats)
+```
+### Object subsetting
+
+```{r subsetting_data}
+#myData[1:10]
+```
+
+```{r subsetting_data2}
+#subSamples = getSamples(myData)[1:20]
+#myData[subSamples]
+#getExperiment(myData[subSamples])
+```
+
+### CN features
+
+```{r calc_features}
+#myData
+#myData = calculateFeatures(object = myData,method = "mac")
+#myData
+#getExperiment(myData)
+```
+
+```{r subsetting_data3}
+#myData = myData[1:100]
+#myData
+#length(unique(myData@featData$segsize$I))
+```
+
+### SamplexComponent matrix
+```{r sampCompMat}
+#myData = calculateSampleByComponentMatrix(object = myData)
+#myData
+```
+
+```{r sampCompMat_details}
+#names(myData@featFitting)
+#myData@featFitting$method
+#myData@featFitting$model
+```
+
+```{r subsetting_data4}
+# = myData[1:50]
+#myData
+```
+
+```{r sxc_plotting}
+#lotSampleByComponent(object = myData)
+```
+

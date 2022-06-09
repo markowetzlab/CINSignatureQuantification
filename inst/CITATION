@@ -1,0 +1,37 @@
+citHeader("To cite CINSignatureQuantification in publications use:")
+
+citEntry(
+  entry    = "Article",
+  title    = "A pan-cancer compendium of chromosomal instability",
+  author   = personList(as.person("Ruben Drews")),
+  journal  = "Nature",
+  year     = "2022",
+  volume   = "",
+  number   = "",
+  pages    = "",
+  url      = "",
+  textVersion = paste("Drews et al.",
+                    "A pan-cancer compendium of chromosomal instability",
+                    "Nature (2022)",
+                    "<doi:##>."
+  )
+)
+
+citEntry(
+  entry    = "Article",
+  title    = "Copy number signatures and mutational processes in ovarian carcinoma",
+  author   = personList(as.person("Geoff Macintyre")),
+  journal  = "Nature Genetics",
+  year     = "2018",
+  volume   = "50",
+  number   = "9",
+  pages    = "1262-1270",
+  doi      = "10.1038/s41588-018-0179-8",
+  textVersion = paste("Macintyre et al.",
+                    "Copy number signatures and mutational processes in ovarian carcinoma.",
+                    "Nature Genetics (2018)",
+                    "<doi:10.1038/s41588-018-0179-8>."
+
+  )
+)
+
