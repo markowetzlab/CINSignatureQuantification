@@ -6,7 +6,8 @@ setMethod(
     definition = function(object,
                           experimentName = "Default",
                           method = "drews",
-                          cores = 1) {
+                          cores = 1,
+                          build = "hg19") {
         # Check method
         if (is.null(method) | !(method %in% c("drews", "mac"))) {
             stop("Method was neither 'drews' nor 'mac'.")
@@ -14,7 +15,8 @@ setMethod(
 
         # Create object from CN profiles
         # TODO: Extend for QDNAseq
-        cigTCGA = createCNQuant(data = object, experimentName = experimentName)
+        cigTCGA = createCNQuant(data = object, experimentName = experimentName,
+                                build = build)
         # Extract features
         cigTCGA = calculateFeatures(object = cigTCGA,
                                     method = method,

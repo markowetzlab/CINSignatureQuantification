@@ -113,13 +113,14 @@ setGeneric("calculateActivity",function(object, method="drews")
 #' @param experimentName A user-specified name of the experiment
 #' @param method The method used for calculating the signature activities. Default is "drews"
 #' @param cores Number of threads/cores to use for parallel processing
+#' @param build Genome build to use (default: hg19)
 #' @return A SigQuant class object with four activity matrices stored in the "activities" slot
 #' @export
 #' @docType methods
 #' @rdname quantifyCNSignatures-methods
 #'
 
-setGeneric("quantifyCNSignatures",function(object, experimentName="Default", method="drews",cores=1)
+setGeneric("quantifyCNSignatures",function(object, experimentName="Default", method="drews",cores=1, build="hg19")
     standardGeneric("quantifyCNSignatures"))
 
 #' clinPredictionPlatinum
