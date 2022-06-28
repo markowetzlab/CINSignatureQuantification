@@ -26,9 +26,9 @@ Install the package either from Github directly by using `devtools`
 install_github("markowetzlab/CINSignatureQuantification", build_vignettes = TRUE, dependencies = TRUE)
 ```
 
-or from CRAN
+or from CRAN (Not currently available)
 ```r
-install.package("CINSignatureQuantification", dependencies = TRUE)
+#install.package("CINSignatureQuantification", dependencies = TRUE)
 ```
 
 Then load the package with:
