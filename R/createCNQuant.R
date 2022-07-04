@@ -11,6 +11,10 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
     if(is.null(data)){
         stop("no data provided\n")
     }
+    supported_builds <- c("hg19","hg38")
+    if(!build %in% supported_builds){
+        stop(paste0("unknown build - supported builds: ",paste0(supported_builds,collapse = ", ")))
+    }
     if(is.character(data)){
         if(!file.exists(data)){
             stop("File not found\n")
@@ -79,8 +83,8 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
                      ExpData = methods::new("ExpQuant",
                           build = build,
                           samples.full = length(segTable),
-                          samples.current = length(segTable)
-                          ,experimentName = experimentName))
+                          samples.current = length(segTable),
+                          experimentName = experimentName))
     } else {
         stop("Unknown input format\n")
     }
