@@ -12,7 +12,8 @@ setMethod("calculateFeatures",
               }
               switch(method,
                 mac={
-                    featData <- extractCopynumberFeaturesMac(object@segments,cores = cores)
+                    featData <- extractCopynumberFeaturesMac(object@segments,cores = cores,
+                    build=object@ExpData@build)
                     methods::initialize(object,featData=featData,
                            ExpData = methods::initialize(object@ExpData,
                                                          last.modified = as.character(Sys.time()),
@@ -31,7 +32,7 @@ setMethod("calculateFeatures",
                     # Filter samples without CIN
                     filtered = removeQuietSamples(smoothed, DCIN = 20)
                     # Extract
-                    featData = startCopynumberFeatureExtractionDrews(filtered, cores = cores, RMNORM = TRUE)
+                    featData = startCopynumberFeatureExtractionDrews(filtered, cores = cores, RMNORM = TRUE, build=object@ExpData@build)
                     methods::initialize(object,featData=featData,
                                         ExpData = methods::initialize(object@ExpData,
                                                                       last.modified = as.character(Sys.time()),

@@ -1,8 +1,14 @@
-extractCopynumberFeaturesMac <- function(CN_data,cores = 1){
+extractCopynumberFeaturesMac <- function(CN_data,cores = 1, build="hg19"){
     #chrlen <- get(load("data/hg19.chrom.sizes.rda"))
-    chrlen <- get(data("hg19.chrom.sizes",envir = environment()))
-    #gaps <- get(load("data/gap_hg19.rda"))
-    gaps <- get(data("gap_hg19",envir = environment()))
+    if (build == "hg19") {
+        chrlen <- get(data("hg19.chrom.sizes",envir = environment()))
+        #gaps <- get(load("data/gap_hg19.rda"))
+        gaps <- get(data("gap_hg19",envir = environment()))
+    } else if (build == "hg38") {
+        chrlen <- get(data("hg38.chrom.sizes",envir = environment()))
+        #gaps <- get(load("data/gap_hg19.rda"))
+        gaps <- get(data("gap_hg38",envir = environment()))
+    }
     centromeres <- gaps[gaps[,8]=="centromere",]
     if(cores > 1) {
         if (!requireNamespace("doParallel", quietly = TRUE)) {

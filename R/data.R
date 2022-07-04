@@ -20,6 +20,28 @@ NULL
 #' @format A data frame with 24 rows and 2 variables
 NULL
 
+#' gap_hg38
+#'
+#' Chromosomal banding and position of genomic features in genome build hg38
+#'
+#' @docType data
+#' @keywords datasets
+#' @name gap_hg38
+#' @usage data(gap_hg38)
+#' @format A data frame with 827 rows and 9 variables
+NULL
+
+#' hg38.chrom.sizes
+#'
+#' Chromosomal lengths for genome build hg38
+#'
+#' @docType data
+#' @keywords datasets
+#' @name hg38.chrom.sizes
+#' @usage data(hg38.chrom.sizes)
+#' @format A data frame with 24 rows and 2 variables
+NULL
+
 #' Drews2022_CX3CX2_Clinical_classifier
 #'
 #' List of mean and scaling factors for signatures 2 and 3 for the prediction of
