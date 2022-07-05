@@ -15,7 +15,7 @@ calculateActivityMac <- function(object){
 }
 
 
-normaliseMatrix<-function(signature_by_sample,sig_thresh=0.01)
+normaliseMatrix<-function(signature_by_sample,sig_thresh=0.01,Hraw=Hraw)
 {
     norm_const<-colSums(signature_by_sample)
     sample_by_signature<-apply(signature_by_sample,1,function(x){x/norm_const})
