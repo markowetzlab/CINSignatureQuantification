@@ -40,7 +40,16 @@ calculateSampleByComponentMatrixDrews = function(brECNF, UNINFPRIOR = TRUE) {
         matSxC = as.matrix(matSxC)
 
         # Should be sorted but just to be sure
-        matSxC = matSxC[, order(thisModel$Mean) ]
+        ## PS - single sample input results in a vector rather than a matrix
+        ## This section reimplements as a matrix and renames the rows to match
+        ## multi-sample input
+        if(nrow(matSxC) == 1){
+            s <- rownames(matSxC)
+            matSxC <- t(as.matrix(matSxC[, order(thisModel$Mean) ]))
+            rownames(matSxC) <- s
+        } else {
+            matSxC = matSxC[, order(thisModel$Mean) ]
+        }
         colnames(matSxC) = paste0( thisFeature, 1:ncol(matSxC) )
 
         return(matSxC)
