@@ -109,7 +109,7 @@ setGeneric("calculateActivity",function(object, method="drews")
 #'
 #' This function takes a copy number profile as input and returns signature activities.
 #'
-#' @param object CNQuant object
+#' @param object input data (segment file - file path or data.frame)
 #' @param experimentName A user-specified name of the experiment
 #' @param method The method used for calculating the signature activities. Default is "drews"
 #' @param cores Number of threads/cores to use for parallel processing

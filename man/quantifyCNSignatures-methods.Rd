@@ -23,7 +23,7 @@ quantifyCNSignatures(
 )
 }
 \arguments{
-\item{object}{CNQuant object}
+\item{object}{input data (segment file - file path or data.frame)}
 
 \item{experimentName}{A user-specified name of the experiment}
 
