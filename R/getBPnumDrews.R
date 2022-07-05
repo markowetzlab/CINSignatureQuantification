@@ -16,7 +16,7 @@ getBPnumDrews = function(abs_profiles,chrlen, SIZE = 10000000) {
         for(c in chrs) {
             currseg = segTab[segTab$chromosome == c,]
             intervals = seq(1, chrlen[chrlen[,1] == paste0("chr",c),2]+SIZE, SIZE)
-            res = hist(as.numeric(currseg$end[-nrow(currseg)]),breaks=intervals,plot=FALSE)$counts
+            res = graphics::hist(as.numeric(currseg$end[-nrow(currseg)]),breaks=intervals,plot=FALSE)$counts
             allBPnum = c(allBPnum,res)
         }
         # Make sure it's really numeric

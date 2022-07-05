@@ -2,7 +2,7 @@ calculateActivityMac <- function(object){
 
         sample_by_component<-object@featFitting$sampleByComponent
         #component_by_signature<-get(load("data/Macintyre2018_OV_Signatures_normalised.rda"))
-        component_by_signature <- get(data("Macintyre2018_OV_Signatures_normalised",envir = environment()))
+        component_by_signature <- get(utils::data("Macintyre2018_OV_Signatures_normalised",envir = environment()))
 
 
         # Do the magic. Calculate signature activities / exposures

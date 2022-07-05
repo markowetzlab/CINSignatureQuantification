@@ -5,7 +5,7 @@ applyThreshNormAndScaling = function(Hraw) {
 
     # Apply signature-specific thresholds (no renormalising happening in order to avoid inflation of signal)
     #vThresh = get(load("data/Drews2022_TCGA_Signature_Thresholds.rda"))
-    vThresh = get(data("Drews2022_TCGA_Signature_Thresholds",envir = environment()))
+    vThresh = get(utils::data("Drews2022_TCGA_Signature_Thresholds",envir = environment()))
     threshH = sapply(names(vThresh), function(thisSig) {
 
         sigVals = H[,thisSig]
@@ -16,7 +16,7 @@ applyThreshNormAndScaling = function(Hraw) {
 
     # Scale according to TCGA-specific scaling factors
     #lScales = get(load("data/Drews2022_TCGA_Scaling_Variables.rda"))
-    lScales = get(data("Drews2022_TCGA_Scaling_Variables",envir = environment()))
+    lScales = get(utils::data("Drews2022_TCGA_Scaling_Variables",envir = environment()))
     threshScaledH = scaleByModel(threshH, lScales)
 
     # Combine for return

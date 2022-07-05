@@ -25,7 +25,7 @@ smoothSegments = function(lRaw, CORES, SMOOTHINGFACTOR, colNameMerge, colNameChr
         }
         `%dopar%` <- foreach::`%dopar%`
         doParallel::registerDoParallel(CORES)
-        lSmooth = foreach::foreach(thisSample = lRaw, .final = function(x) setNames(x, names(lRaw)) ) %dopar% {
+        lSmooth = foreach::foreach(thisSample = lRaw, .final = function(x) stats::setNames(x, names(lRaw)) ) %dopar% {
 
             thisOut = thisSample
             stillSmoothing = sum(thisOut$smooth)
@@ -63,7 +63,7 @@ smoothSegments = function(lRaw, CORES, SMOOTHINGFACTOR, colNameMerge, colNameChr
 
                     # Merge cn specifically by taking the length of the elements into consideration
                     widthWeights = dfMerge[[colNameEnd]] - dfMerge[[colNameStart]]
-                    newElement[[colNameMerge[1]]] = weighted.mean(dfMerge[[colNameMerge[1]]], widthWeights)
+                    newElement[[colNameMerge[1]]] = stats::weighted.mean(dfMerge[[colNameMerge[1]]], widthWeights)
                     # Replace all to merge segments with the new merged segment. Later delete duplicated.
                     thisOut[i:endOfStreak,] = newElement
                 }
@@ -122,7 +122,7 @@ smoothSegments = function(lRaw, CORES, SMOOTHINGFACTOR, colNameMerge, colNameChr
 
                     # Merge cn specifically by taking the length of the elements into consideration
                     widthWeights = dfMerge[[colNameEnd]] - dfMerge[[colNameStart]]
-                    newElement[[colNameMerge[1]]] = weighted.mean(dfMerge[[colNameMerge[1]]], widthWeights)
+                    newElement[[colNameMerge[1]]] = stats::weighted.mean(dfMerge[[colNameMerge[1]]], widthWeights)
                     # Replace all to merge segments with the new merged segment. Later delete duplicated.
                     thisOut[i:endOfStreak,] = newElement
                 }

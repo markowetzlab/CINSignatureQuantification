@@ -7,7 +7,7 @@ calculateActivityDrews = function(myData) {
 
     # Load signatures
     #W = get(load("data/Drews2022_TCGA_Signatures.rda"))
-    W = get(data("Drews2022_TCGA_Signatures",envir = environment()))
+    W = get(utils::data("Drews2022_TCGA_Signatures",envir = environment()))
 
     # Sanity check mutational catalogue (not really necessary)
     if(nSamp > nFeat) {

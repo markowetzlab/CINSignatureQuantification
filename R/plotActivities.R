@@ -37,15 +37,15 @@ plotActivities <- function(object){
     plotdata <- plotdata[order(plotdata[,1],decreasing = T),]
     tabl <- t(as.matrix(plotdata))
 
-    par(mar=c(5, 4, 4, 8), xpd=TRUE)
-    barplot(tabl,
+    graphics::par(mar=c(5, 4, 4, 8), xpd=TRUE)
+    graphics::barplot(tabl,
             main = paste0("Signature activities (","method: ",object@signature.model,")"),
             col = cols,
             xlab = "sample",
             names.arg=rep("",ncol(tabl)),
             ylab = "relative exposure",
             axes=TRUE)
-    legend(x= "topright",
+    graphics::legend(x= "topright",
            inset=c(l.pos, 0),
            legend = rownames(tabl),
            fill=cols,

@@ -7,7 +7,7 @@
 #' @slot samples.current numeric
 #' @slot build character
 #' @slot feature.method character
-#'
+#' @importFrom methods new
 #' @export
 ExpQuant <- setClass("ExpQuant",
                     slots = list(experimentName = "character",
@@ -35,7 +35,7 @@ ExpQuant <- setClass("ExpQuant",
 #' @slot featFitting list
 #' @slot samplefeatData data.frame
 #' @slot ExpData ExpQuant
-#'
+#' @importFrom methods new
 #' @export
 #'
 CNQuant <- setClass("CNQuant",
@@ -54,7 +54,7 @@ CNQuant <- setClass("CNQuant",
 #' @slot backup.thresholds numeric
 #' @slot backup.scale list
 #' @slot backup.scale.model character
-#'
+#' @importFrom methods new
 #' @export
 #'
 SigQuant <- setClass("SigQuant",
