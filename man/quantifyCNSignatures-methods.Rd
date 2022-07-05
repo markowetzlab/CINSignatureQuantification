@@ -3,23 +3,21 @@
 \docType{methods}
 \name{quantifyCNSignatures}
 \alias{quantifyCNSignatures}
-\alias{quantifyCNSignatures,data.frame-method}
+\alias{quantifyCNSignatures,ANY-method}
 \title{quantifyCNSignatures}
 \usage{
 quantifyCNSignatures(
   object,
   experimentName = "Default",
   method = "drews",
-  cores = 1,
-  build = "hg19"
+  cores = 1
 )
 
-\S4method{quantifyCNSignatures}{data.frame}(
+\S4method{quantifyCNSignatures}{ANY}(
   object,
   experimentName = "Default",
   method = "drews",
-  cores = 1,
-  build = "hg19"
+  cores = 1
 )
 }
 \arguments{
@@ -30,8 +28,6 @@ quantifyCNSignatures(
 \item{method}{The method used for calculating the signature activities. Default is "drews"}
 
 \item{cores}{Number of threads/cores to use for parallel processing}
-
-\item{build}{Genome build to use (default: hg19)}
 }
 \value{
 A SigQuant class object with four activity matrices stored in the "activities" slot
