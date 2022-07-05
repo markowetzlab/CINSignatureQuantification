@@ -45,8 +45,14 @@ calculateSampleByComponentMatrixMac = function(brECNF, UNINFPRIOR = FALSE) {
         matSxC$Sample = NULL
         matSxC = as.matrix(matSxC)
 
-        # Should be sorted but just to be sure
-        matSxC = matSxC[, order(thisModel$Mean) ]
+        if(nrow(matSxC) == 1){
+            s <- rownames(matSxC)
+            matSxC <- t(as.matrix(matSxC[, order(thisModel$Mean) ]))
+            rownames(matSxC) <- s
+        } else {
+            matSxC = matSxC[, order(thisModel$Mean) ]
+        }
+
         colnames(matSxC) = paste0( thisFeature, 1:ncol(matSxC) )
 
         return(matSxC)
