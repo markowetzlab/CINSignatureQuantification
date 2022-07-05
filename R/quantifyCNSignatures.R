@@ -2,7 +2,7 @@
 #' @aliases quantifyCNSignatures
 setMethod(
     "quantifyCNSignatures",
-    signature = c(object = c("data.frame")),
+    signature = c(object = "ANY"),
     definition = function(object,
                           experimentName = "Default",
                           method = "drews",

@@ -3,7 +3,7 @@
 \docType{methods}
 \name{quantifyCNSignatures}
 \alias{quantifyCNSignatures}
-\alias{quantifyCNSignatures,data.frame-method}
+\alias{quantifyCNSignatures,ANY-method}
 \title{quantifyCNSignatures}
 \usage{
 quantifyCNSignatures(
@@ -13,7 +13,7 @@ quantifyCNSignatures(
   cores = 1
 )
 
-\S4method{quantifyCNSignatures}{data.frame}(
+\S4method{quantifyCNSignatures}{ANY}(
   object,
   experimentName = "Default",
   method = "drews",
