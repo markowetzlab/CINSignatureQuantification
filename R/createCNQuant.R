@@ -33,15 +33,17 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
             if(checkSegValRounding(segTable$segVal)){
                 warning("segVal appears to be rounded, copy number signatures require unrounded absolute copy numbers")
             }
-            if(checkbinned(segTable)){
-                #segTable <- getSegTable()
-                #
-                # Not implemented
-                #
-                #split(segTable,f = as.factor(segTable$sample))
-            } else {
-                segTable <- split(segTable,f = as.factor(segTable$sample))
-            }
+            ## Binned inputs (fixed width not supported yet)
+            # if(checkbinned(segTable)){
+            #     #segTable <- getSegTable()
+            #     #split(segTable,f = as.factor(segTable$sample))
+            # } else {
+            #     segTable <- split(segTable,f = as.factor(segTable$sample))
+            # }
+            ## Temp split until fixed bin input implemented
+            segTable <- droplevels(segTable)
+            segTable <- split(segTable,f = as.factor(segTable$sample))
+
             samplefeatData <- generateSampleFeatData(x = segTable)
             methods::new("CNQuant",segments = segTable,samplefeatData = samplefeatData,
                 ExpData = methods::new("ExpQuant",
@@ -55,6 +57,7 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
         if(checkSegValRounding(segTable$segVal)){
             warning("segVal appears to be rounded, copy number signatures require unrounded absolute copy numbers")
         }
+        segTable <- droplevels(segTable)
         segTable <- split(segTable,f = as.factor(segTable$sample))
         samplefeatData <- generateSampleFeatData(x = segTable)
         methods::new("CNQuant",segments = segTable,samplefeatData = samplefeatData,
@@ -80,6 +83,7 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
         #     segTable <- split(segTable,f = as.factor(segTable$sample))
         # }
         ## Temp split until fixed bin input implemented
+        segTable <- droplevels(segTable)
         segTable <- split(segTable,f = as.factor(segTable$sample))
         samplefeatData <- generateSampleFeatData(x = segTable)
         methods::new("CNQuant",segments=segTable,samplefeatData = samplefeatData,

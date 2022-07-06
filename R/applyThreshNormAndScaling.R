@@ -14,6 +14,10 @@ applyThreshNormAndScaling = function(Hraw) {
         return(sigVals)
     })
 
+    if(is.null(dim(threshH))){
+        threshH <- t(as.matrix(threshH))
+        rownames(threshH) <- rownames(H)
+    }
     # Scale according to TCGA-specific scaling factors
     #lScales = get(load("data/Drews2022_TCGA_Scaling_Variables.rda"))
     lScales = get(utils::data("Drews2022_TCGA_Scaling_Variables",envir = environment()))
