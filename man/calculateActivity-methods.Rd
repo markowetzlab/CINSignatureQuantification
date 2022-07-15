@@ -6,14 +6,16 @@
 \alias{calculateActivity,CNQuant-method}
 \title{calculateActivity}
 \usage{
-calculateActivity(object, method = "drews")
+calculateActivity(object, method = "drews", cancer.subset = NULL)
 
-\S4method{calculateActivity}{CNQuant}(object, method = NULL)
+\S4method{calculateActivity}{CNQuant}(object, method = NULL, cancer.subset = NULL)
 }
 \arguments{
 \item{object}{CNQuant object}
 
 \item{method}{Determines the mixture components used to calculate sum-of-posterior probabilities. Default is "drews".}
+
+\item{cancer.subset}{A TCGA cancer subset (e.g. BRCA or KIRC) identifier to select a subset of signatures for calculating signature activity.}
 }
 \value{
 A SigQuant class object with four activity matrices stored in the "activities" slot

@@ -1,14 +1,17 @@
-calculateActivityDrews = function(myData) {
+calculateActivityDrews = function(object,cancer.subset=NULL) {
 
     # Extract relevant information from object
-    V = myData@featFitting$sampleByComponent
-    nSamp = length(getSamples(myData))
-    nFeat = ncol(myData@featFitting$sampleByComponent)
+    V = object@featFitting$sampleByComponent
+    nSamp = length(getSamples(object))
+    nFeat = ncol(object@featFitting$sampleByComponent)
 
     # Load signatures
     #W = get(load("data/Drews2022_TCGA_Signatures.rda"))
     W = get(utils::data("Drews2022_TCGA_Signatures",envir = environment()))
-
+    if(!is.null(cancer.subset)){
+        subset = getCancerSpecificSignatures(cancer.subset)
+        W = W[rownames(W) %in% subset,]
+    }
     # Sanity check mutational catalogue (not really necessary)
     if(nSamp > nFeat) {
         # Case 1: More samples than features

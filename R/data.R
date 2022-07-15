@@ -134,3 +134,19 @@ NULL
 #' @usage data(Macintyre2018_OV_Signatures_normalised)
 #' @format A 7 by 36 numeric matrix
 NULL
+
+#' cancerSpecificSignatures
+#'
+#' List of 20 named character vectors describing the signatures associated with each
+#' cancer type (as described in Drews et al. 2022 signature discovery). Vectors include
+#' 10 pan-cancer signatures plus any additional signatures specific to the selected cancer type.
+#'
+#' Cancer types are limited to "BRCA", "BLCA", "OV", "LUAD", "GBM", "STAD", "SKCM", "UCEC", "HNSC",
+#' "CESC", "LUSC", "SARC", "COAD", "KIRC", "LGG", "READ", "PRAD", "ESCA", "LIHC", & "TGCT"
+#'
+#' @docType data
+#' @keywords datasets
+#' @name cancerSpecificSignatures
+#' @usage data(cancerSpecificSignatures)
+#' @format A length 20 named list of character vectors
+NULL

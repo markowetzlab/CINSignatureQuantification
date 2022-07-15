@@ -2,7 +2,7 @@
 #' @aliases calculateActivity
 setMethod("calculateActivity",
           signature=c(object="CNQuant"),
-          definition=function(object, method=NULL){
+          definition=function(object, method=NULL,cancer.subset=NULL){
               if(length(object@featFitting) == 0){
                   stop("Sample-by-component unavailable - run 'calculateSampleByComponentMatrix()'")
               }
@@ -12,6 +12,9 @@ setMethod("calculateActivity",
               }
               switch(method,
                      mac={
+                         if(!is.null(cancer.subset)){
+                             stop("argument 'cancer.subset = '",cancer.subset,"' provided - cancer subsetting not available for mac method",call. = F)
+                         }
                          SigActs <- calculateActivityMac(object)
                          Hraw <- t(SigActs[[1]])
                          SigActs <- t(SigActs[[2]])
@@ -33,9 +36,9 @@ setMethod("calculateActivity",
                      },
                      drews={
                          # Calculate activities
-                         Hraw = calculateActivityDrews(object)
+                         Hraw = calculateActivityDrews(object,cancer.subset=cancer.subset)
                          # Apply thresholds, normalisation and TCGA-specific scaling
-                         lSigs = applyThreshNormAndScaling(Hraw)
+                         lSigs = applyThreshNormAndScaling(Hraw,cancer.subset=cancer.subset)
 
                          # Load data to be put into model as backup
                          #W = get(load("data/Drews2022_TCGA_Signatures.rda"))

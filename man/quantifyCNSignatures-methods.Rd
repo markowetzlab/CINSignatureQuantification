@@ -11,7 +11,8 @@ quantifyCNSignatures(
   experimentName = "Default",
   method = "drews",
   cores = 1,
-  build = "hg19"
+  build = "hg19",
+  cancer.subset = NULL
 )
 
 \S4method{quantifyCNSignatures}{ANY}(
@@ -19,7 +20,8 @@ quantifyCNSignatures(
   experimentName = "Default",
   method = "drews",
   cores = 1,
-  build = "hg19"
+  build = "hg19",
+  cancer.subset = NULL
 )
 }
 \arguments{
@@ -31,7 +33,9 @@ quantifyCNSignatures(
 
 \item{cores}{Number of threads/cores to use for parallel processing}
 
-\item{build}{Genome build to use (default: hg19)}
+\item{build}{Genome build to use, either hg19 or hg38 (default: hg19)}
+
+\item{cancer.subset}{A TCGA cancer subset (e.g. BRCA or KIRC) identifier to select a subset of signatures for calculating signature activity}
 }
 \value{
 A SigQuant class object with four activity matrices stored in the "activities" slot
