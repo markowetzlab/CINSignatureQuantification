@@ -30,7 +30,8 @@ getCentromereDistCountsMac<-function(abs_profiles,centromeres,chrlen){
                 ndist[starts>=centend,1]<-(starts[starts>=centend]-centend)/(segend-centend)
                 ndist[ends<=centstart,2]<-(centstart-ends[ends<=centstart])/(centstart-segstart)*-1
                 ndist[ends>=centend,2]<-(ends[ends>=centend]-centend)/(segend-centend)
-                ndist<-apply(ndist,1,min)
+		ndist<-na.omit(ndist)
+		ndist<-apply(ndist,1,min)
 
                 all_dists<-rbind(all_dists,sum(ndist>0))
                 all_dists<-rbind(all_dists,sum(ndist<=0))
