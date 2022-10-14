@@ -31,7 +31,7 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
                                           header = T,
                                           colClasses = c("character","numeric","numeric","numeric","character"))
             if(checkSegValRounding(segTable$segVal)){
-                warning("segVal appears to be rounded, copy number signatures require unrounded absolute copy numbers")
+                warning("segVal appears to be rounded, copy number signatures were defined on unrounded absolute copy numbers, use caution when interpretting and comparing between rounded and unrounded inputs.")
             }
             ## Binned inputs (fixed width not supported yet)
             # if(checkbinned(segTable)){
@@ -42,6 +42,7 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
             # }
             ## Temp split until fixed bin input implemented
             segTable <- droplevels(segTable)
+            segTable$chromosome <- checkChromosomeFormat(segTable$chromosome)
             segTable <- split(segTable,f = as.factor(segTable$sample))
 
             samplefeatData <- generateSampleFeatData(x = segTable)
@@ -55,9 +56,10 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
     } else if("QDNAseqCopyNumbers" %in% class(data)){
         segTable <- getSegTable(x = data)
         if(checkSegValRounding(segTable$segVal)){
-            warning("segVal appears to be rounded, copy number signatures require unrounded absolute copy numbers")
+            warning("segVal appears to be rounded, copy number signatures were defined on unrounded absolute copy numbers, use caution when interpretting and comparing between rounded and unrounded inputs.")
         }
         segTable <- droplevels(segTable)
+        segTable$chromosome <- checkChromosomeFormat(segTable$chromosome)
         segTable <- split(segTable,f = as.factor(segTable$sample))
         samplefeatData <- generateSampleFeatData(x = segTable)
         methods::new("CNQuant",segments = segTable,samplefeatData = samplefeatData,
@@ -84,6 +86,7 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
         # }
         ## Temp split until fixed bin input implemented
         segTable <- droplevels(segTable)
+        segTable$chromosome <- checkChromosomeFormat(segTable$chromosome)
         segTable <- split(segTable,f = as.factor(segTable$sample))
         samplefeatData <- generateSampleFeatData(x = segTable)
         methods::new("CNQuant",segments=segTable,samplefeatData = samplefeatData,
