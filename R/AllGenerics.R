@@ -10,17 +10,15 @@
 #'
 setGeneric("getSamples", function(object) standardGeneric("getSamples"))
 
-#' getSegments
-#'
-#' Extracts copy number segment data from a CNQuant object.
+#' getSampleByComponent
 #'
 #' @param object CNQuant object
-#' @return A data.frame
+#' @return matrix containing the sample-by-component data
 #' @export
 #' @docType methods
-#' @rdname getSegments-methods
+#' @rdname getSampleByComponent-methods
 #'
-setGeneric("getSegments", function(object) standardGeneric("getSegments"))
+setGeneric("getSampleByComponent", function(object) standardGeneric("getSampleByComponent"))
 
 #' getSamplefeatures
 #'
@@ -34,15 +32,30 @@ setGeneric("getSegments", function(object) standardGeneric("getSegments"))
 #'
 setGeneric("getSamplefeatures", function(object) standardGeneric("getSamplefeatures"))
 
-#' getSampleByComponent
+#' getSegments
+#'
+#' Extracts copy number segment data from a CNQuant object.
 #'
 #' @param object CNQuant object
-#' @return matrix containing the sample-by-component data
+#' @return A data.frame
 #' @export
 #' @docType methods
-#' @rdname getSampleByComponent-methods
+#' @rdname getSegments-methods
 #'
-setGeneric("getSampleByComponent", function(object) standardGeneric("getSampleByComponent"))
+setGeneric("getSegments", function(object) standardGeneric("getSegments"))
+
+#' getSignatures
+#'
+#' Extracts signatures names from a SigQuant object.
+#'
+#' @param object SigQuant object
+#' @param type type of copy number signature matrix to return 'raw', 'norm', 'threshold', or 'scaled'
+#' @return A numeric matrix
+#' @export
+#' @docType methods
+#' @rdname getSignatures-methods
+#'
+setGeneric("getSignatures", function(object,type="threshold") standardGeneric("getSignatures"))
 
 #' getExperiment
 #'
