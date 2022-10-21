@@ -44,18 +44,18 @@ setGeneric("getSamplefeatures", function(object) standardGeneric("getSamplefeatu
 #'
 setGeneric("getSegments", function(object) standardGeneric("getSegments"))
 
-#' getSignatures
+#' getActivities
 #'
-#' Extracts signatures names from a SigQuant object.
+#' Extracts signature activities from a SigQuant object.
 #'
 #' @param object SigQuant object
 #' @param type type of copy number signature matrix to return 'raw', 'norm', 'threshold', or 'scaled'
 #' @return A numeric matrix
 #' @export
 #' @docType methods
-#' @rdname getSignatures-methods
+#' @rdname getActivities-methods
 #'
-setGeneric("getSignatures", function(object,type="threshold") standardGeneric("getSignatures"))
+setGeneric("getActivities", function(object,type="threshold") standardGeneric("getActivities"))
 
 #' getExperiment
 #'

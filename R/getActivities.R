@@ -1,6 +1,6 @@
-#' @rdname getSignatures-methods
-#' @aliases getSignatures
-setMethod("getSignatures",signature = "SigQuant",function(object,type="threshold"){
+#' @rdname getActivities-methods
+#' @aliases getActivities
+setMethod("getActivities",signature = "SigQuant",function(object,type="threshold"){
     types <- c("raw","norm","threshold","scaled")
     method <- getExperiment(object)@feature.method
     if(!type %in% c("raw","norm","threshold","scaled")){
