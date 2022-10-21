@@ -39,6 +39,7 @@ Imports:
     stringr (>= 1.4),
     utils
 Suggests:
+    testthat (>= 3.0.0),
     doParallel (>= 1.0.16),
     foreach (>= 1.5.1),
     knitr,
@@ -49,3 +50,4 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0
 VignetteBuilder: knitr
+Config/testthat/edition: 3
