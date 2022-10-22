@@ -12,15 +12,14 @@ Authors@R:
            role = c("aut", "cre"),
            email = "Ruben.Drews@cruk.cam.ac.uk",
            comment = c(ORCID = "0000-0001-7360-4970")),
-    person(given = "Cancer Research UK",
+    person(given = "Univerity of Cambridge",
            role = c("cph", "fnd"),
            email = "Florian.Markowetz@cruk.cam.ac.uk",
            comment = c(ORCID = "0000-0002-2784-5308"))
     )
-Description: Allowing the simple and quick quantification of copy number signatures in 
-    cancer samples from copy number profiles. The signatures are a readout of mutational 
-    processes resulting in chromosomal instability (CIN). It is thought as a one-stop 
-    solution, combining multiple published solutions. At the moment the methods from 
+Description: Quantification of copy number signatures in cancer samples from 
+    copy number profiles. The signatures are a readout of mutational 
+    processes resulting in chromosomal instability (CIN). Methods from 
     Drews et al. (Nature, 2022) and Macintyre et al. (Nature Genetics, 2018) are included.
 URL: https://github.com/markowetzlab/CINSignatureQuantification
 BugReports: https://github.com/markowetzlab/CINSignatureQuantification/issues

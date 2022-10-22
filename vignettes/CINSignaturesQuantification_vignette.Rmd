@@ -3,7 +3,7 @@ title: "CINSignaturesQuantification_vignette"
 
 ---
 title: "CINSignatureQuantification - Simple and quick measuring of copy number signatures in cancers"
-author: "Philip Smith <cre>, Ruben Drews <cre, auth>, Cancer Research UK <cph, fnd>"
+author: "Philip Smith <cre>, Ruben Drews <cre, auth>, University of Cambridge <cph, fnd>"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: rmarkdown::html_vignette
 vignette: >

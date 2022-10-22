@@ -1,109 +1,94 @@
-# SignatureQuantification
+# CINSignatureQuantification
 
-R package to quantify signatures of chromosomal instability on copy number profiles.
+<!-- badges: start -->
+[![minimal R version](https://img.shields.io/badge/R%3E%3D-3.6.0-blue.svg)](https://cran.r-project.org/)
+<!-- badges: end -->
 
-## Check status
+R package to quantify signatures of chromosomal instability on absolute copy number profiles.
 
-TBD
+# Introduction
 
-## Introduction
+Chromosomal instability Chromosomal instability (CIN) results in the accumulation of large-scale losses, gains, and rearrangements of DNA. In our recent study [1], we present a systematic framework to measure different types of CIN and their impact on clinical phenotypes. This R package allows you to quantify the activity of the 17 signatures presented. It also allows you to quantify signature activities from other publications [2]. First, copy number features are extracted from the copy number profiles. Second, the features are assigned to components for which a probability will be calculated. These probabilities are then summed up for each patient. Third, the probabilities across the components are used to quantify signature activities. Fourth, the signature activities can be used to predict patient response to platinum-based chemotherapies.
 
-Chromosomal instability Chromosomal instability (CIN) results in the accumulation of large-scale losses, gains, and rearrangements of DNA.
-In our recent study [1], we present a systematic framework to measure different types of CIN and their impact on clinical phenotypes.
-This R package allows you to quantify the activity of the 17 signatures presented. It also allows you to quantify signature activities from other publications [2].
+The `CINSignatureQuantification` package provides you with the functions and example data to automise this process of quantifying copy number signature activities.
 
-First, copy number features are extracted from the copy number profiles.
-Second, the features are assigned to components for which a probability will be calculated. These probabilities are then summed up for each patient.
-Third, the probabilities across the components are used to quantify signature activities.
-Fourth, the signature activities can be used to predict patient response to platinum-based chemotherapies.
+# Installation
 
-The `SignatureQuantification` package provides you with the functions and example data to automise this process of quantifying signature activities.
-
-## Quick start
-
-Install the package either from Github directly by using `devtools`
+Install the package from Github directly by using `devtools`
 ```r
 install_github("markowetzlab/CINSignatureQuantification", build_vignettes = TRUE, dependencies = TRUE)
-```
-
-or from CRAN (Not currently available)
-```r
-#install.package("CINSignatureQuantification", dependencies = TRUE)
 ```
 
 Then load the package with:
 ```r
 library(CINSignatureQuantification)
 ```
+# Input data
 
-If you have a segmented copy number profile that looks like the following example, then you are good to go. Preferably use unrounded copy number data but rounded data will do fine as well.
-> chromosome  start     end         segVal    sample
-> 1           61735     249224388   2.0       TCGA-BT-A20P
-> 2           12784     82571206    2.0       TCGA-BT-A20P
-> 2           82571664  85357333    0.843     TCGA-BT-A20P
+Input data is absolute copy number profiles in segment table format, containing multiple samples, without allele or subclonal information, see below. 
 
-Then use this function to automise the process of feature extraction and signature quantification:
+## Example input
+
+|chromosome |start     |end         |segVal    |sample      |
+|-----------|----------|------------|----------|------------|
+|1          |61735     |249224388   |3.1       |TCGA-BT-A20P|
+|2          |12784     |82571206    |2.0       |TCGA-BT-A20P|
+|3          |82571664  |85357333    |0.843     |TCGA-BT-A20P|
+
+**Warning:** It is preferable use _unrounded_ copy number segments (floating point segVal states). _Rounded_ copy number states (integer segVal states) will work but outputs may not be directly comparable to _unrounded_ copy number outputs.
+
+## Example data
+
+The package comes with a set of 478 samples that were both part of the TCGA and the PCAWG cohort and have detectable levels of CIN [1] contained within the github repository.
+
+```
+exampleData <- readRDS("inst/TCGA_478_Samples_SNP6_GOLD.rds")
+```
+
+# Quick start
+
+The `CINSignatureQuantification` package offers two main functions: `quantifyCNSignatures` and `clinPredictionPlatinum`. It also allows you to do the signature quantification step-by-step with these functions: `createCNQuant`, `calculateFeatures`, `calculateSampleByComponentMatrix`, `calculateActivity` and `clinPredictionDenovo`.
+
+## Quantifying signature activies
+
+CIN signatures can be quantified using the `quantifyCNSignatures()` function where the primary input is a a segment table.
+
 ```r
 mySigs = quantifyCNSignatures(<YourCopyNumberProfile>)
 ```
+
+Input can be a loaded R data.frame object or file path to a segment table. There is also support to load segment tables directly from a `QDNAseqCopyNumbers` object generated by [QDNAseq](https://github.com/ccagc/QDNAseq). By default, the build used is `hg19` and method is `drews`, see function documentation for additional options.
+
+## Predict platinum status
 
 If you want to use the signature activities to predict response to platinum-based chemotherapies, use this function:
 ```r
 vPredictions = clinPredictionPlatinum(mySigs)
 ```
 
-## Requirements
+# Maintenance & help
 
-The `CINSignatureQuantification` package requires R version >= 4.0 and depends on the following packages:
-* data.table
-* stringr
-* parallel
-* foreach
-* doMC
-Therefore, these packages need to be installed (see below).
+For any code bugs, feature requests, or implementation errors, please open an issue. For more information on obtaining copy number profiles, please refer to the documentation of common copy number callers like [ASCAT](https://github.com/VanLoo-lab/ascat) or [ABSOLUTE](https://github.com/ShixiangWang/DoAbsolute). More information on how to work with and generate copy number signatures can be obtained from: [Drews et al. (Nature, 2022)](https://www.nature.com/articles/s41586-022-04789-9) or [Macintyre et al. (Nature Genetics, 2018)](https://www.nature.com/articles/s41588-018-0179-8).
 
-## Functionality
-
-The `CINSignatureQuantification` package offers two main functions: `quantifyCNSignatures` and `clinPredictionPlatinum`. It also allows you to do the signature quantification step-by-step with these functions: `createCNQuant`, `calculateFeatures`, `calculateSampleByComponentMatrix`, `calculateActivity` and `clinPredictionDenovo`.
-
-## Getting help
-
-For more information on obtaining copy number profiles, please refer to the documentation of common copy number callers like [ASCAT](https://github.com/VanLoo-lab/ascat) or [ABSOLUTE](https://github.com/ShixiangWang/DoAbsolute).
-
-More information on how to work with and generate copy number signatures can be obtained from: [Drews et al. (Nature, 2022)](https://www.nature.com/articles/s41586-022-04789-9) or [Macintyre et al. (Nature Genetics, 2018)](https://www.nature.com/articles/s41588-018-0179-8).
-
-## Example data
-
-The package comes with a set of 478 samples that were both part of the TCGA and the PCAWG cohort and have detectable levels of CIN [1].
-
-
-## Citation
-
-Please cite `CINSignatureQuantification` as:
+# Citation
+Please cite `CINSignatureQuantification` as described:
 
 ```
-TBD
+citation("CINSignatureQuantification")
 ```
+# References
 
-## Authors
+* [1] [Drews et al. (Nature, 2022)](https://www.nature.com/articles/s41586-022-04789-9)
+* [2] [Macintyre et al. (Nature Genetics, 2018)](https://www.nature.com/articles/s41588-018-0179-8)
+
+# Authors
 
 [Ruben Drews](https://github.com/Martingales) Ruben.Drews 'at' cruk.cam.ac.uk
 
 [Philip Smith](https://github.com/Phil9S) Philip.Smith 'at' cruk.cam.ac.uk
 
 
-## References
-
-[1] [Drews et al. (Nature, 2022)](https://www.nature.com/articles/s41586-022-04789-9)
-
-[2] [Macintyre et al. (Nature Genetics, 2018)](https://www.nature.com/articles/s41588-018-0179-8)
-
-## Maintenance
-
-For any issues please open an issue!
-
-
-## Licence
+# Licence
 The contents of this repository are copyright (c) 2022, University of Cambridge and Spanish National Cancer Research Centre (CNIO).
 
 The contents of this repository are published and distributed under the GAP Available Source License v1.0 (ASL). 
