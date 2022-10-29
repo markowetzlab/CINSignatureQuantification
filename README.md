@@ -16,7 +16,7 @@ The `CINSignatureQuantification` package provides you with the functions and exa
 
 Install the package from Github directly by using `devtools`
 ```r
-install_github("markowetzlab/CINSignatureQuantification", build_vignettes = TRUE, dependencies = TRUE)
+devtools::install_github("markowetzlab/CINSignatureQuantification", build_vignettes = TRUE, dependencies = TRUE)
 ```
 
 Then load the package with:
