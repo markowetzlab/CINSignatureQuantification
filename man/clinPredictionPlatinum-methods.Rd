@@ -14,8 +14,18 @@ clinPredictionPlatinum(object)
 \item{object}{SigQuant object}
 }
 \value{
-A vector with "Predicted sensitive" or "Predicted resistant" for all samples in the input object.
+A vector with "Predicted sensitive" or "Predicted resistant" for all
+samples in the input object.
 }
 \description{
-The function takes signature activities based on Drews et al. methodology and predicts patient's response to platinum-based chemotherapies.
+The function takes signature activities based on Drews et al. 2022
+methodology and predicts response to platinum-based chemo-therapeutics.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  t478 <- TCGA_478_Samples_SNP6_GOLD
+  subsample <- unique(t478$sample)[1:10]
+  t478 <- t478[t478$sample \%in\% subsample]
+  cnobj <- quantifyCNSignatures(t478,method="drews")
+  cnobj <- clinPredictionPlatinum(cnobj)
 }

@@ -15,13 +15,27 @@ calculateFeatures(object, method = "drews", smooth.diploid = TRUE, cores = 1)
 
 \item{method}{Method to extract copy number features. Default is "drews".}
 
-\item{smooth.diploid}{Binary variable indicating whether segments close to 2 should be collapsed to 2 and merged together. Default is TRUE.}
+\item{smooth.diploid}{Binary variable indicating whether segments close to 2
+should be collapsed to 2 and merged together. Default is TRUE.}
 
-\item{cores}{Number of CPU threads/cores to utilise via doParallel. Default is 1.}
+\item{cores}{Number of CPU threads/cores to utilise via doParallel. Default
+is 1. Maximum number is equal to the number of features to extract (drews &
+mac methods = 6 features).}
 }
 \value{
-A CNQuant class object with extracted features stored in the "featData" slot
+A CNQuant class object with extracted features stored in the
+"featData" slot
 }
 \description{
-Extracts and returns copy number features from copy number profiles in a CNQuant object.
+Calculates and returns copy number features from copy number profiles in a
+\code{CNQuant} class object. The output from this function is stored within the
+\code{featData} slot in the returned \code{CNQuant} class object.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- calculateFeatures(cnobj[1:10],method="drews")
+}
+\seealso{
+\code{\link[=getFeatures]{getFeatures()}}
 }

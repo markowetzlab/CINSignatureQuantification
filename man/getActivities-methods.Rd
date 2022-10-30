@@ -13,11 +13,39 @@ getActivities(object, type = "threshold")
 \arguments{
 \item{object}{SigQuant object}
 
-\item{type}{type of copy number signature matrix to return 'raw', 'norm', 'threshold', or 'scaled'}
+\item{type}{type of copy number signature matrix to return 'raw', 'norm',
+'threshold', or 'scaled' (default: threshold).}
 }
 \value{
-A numeric matrix
+A numeric matrix containing copy number signature activities
 }
 \description{
-Extracts signature activities from a SigQuant object.
+Extracts signature activities from a \code{SigQuant} class object.
+}
+\details{
+Type parameter can be specified to return a specific type of
+activities matrix. For most users, the threshold-corrected ("threshold")
+activities would be preferred and are returned by default if no type is
+specified. * \code{raw}: Copy number signature activities without any
+normalisation or zero-exposure correction. * \code{normalised}: Copy number
+signature activities normalised to between 0 and 1.0 where each sample sums
+to 1.0. * \code{threshold}: Copy number signature activities which are
+normalised and have signature activities less than a given threshold
+reduced to zero. This threshold application is different for each method
+where \code{drews} applies a signature-specific threshold and \code{mac} applies a
+uniform threshold for all signatures. Threshold-corrected signatures using
+\code{drews} method may not sum to 1.0 as normalisation is not reapplied so as
+to not inflate signatures artificially. * \code{scaled}: Copy number signature
+activities scaled by the signature activity distributions identified in
+drews et al. 2022 which aims to make copy number signature activities from
+different data sets comparable to those generated in the drews et al. 2022
+publication.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  t478 <- TCGA_478_Samples_SNP6_GOLD
+  subsample <- unique(t478$sample)[1:10]
+  t478 <- t478[t478$sample \%in\% subsample]
+  cnobj <- quantifyCNSignatures(t478)
+  activities <- getActivities(cnobj,type="threshold")
 }

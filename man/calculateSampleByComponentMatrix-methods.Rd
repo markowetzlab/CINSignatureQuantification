@@ -14,11 +14,24 @@ calculateSampleByComponentMatrix(object, method = "drews")
 \arguments{
 \item{object}{CNQuant object}
 
-\item{method}{Determines the mixture components used to calculate sum-of-posterior probabilities. Default is "drews".}
+\item{method}{Determines the mixture components used to calculate
+sum-of-posterior probabilities. Default is "drews".}
 }
 \value{
-A CNQuant class object with sum-of-posterior probabilities stored in the "featFitting" slot
+A CNQuant class object with sum-of-posterior probabilities stored in
+the "featFitting" slot
 }
 \description{
-Calculates and returns a sample-by-component matrix from copy number features in a CNQuant object.
+Calculates and returns a sample-by-component matrix from copy number features
+in a \code{CNQuant} class object. The output from this function is stored within
+the \code{featFitting} slot in the returned \code{CNQuant} class object.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- calculateFeatures(cnobj[1:10],method="drews")
+  cnobj <- calculateSampleByComponentMatrix(cnobj)
+}
+\seealso{
+\code{\link[=getSampleByComponent]{getSampleByComponent()}}
 }

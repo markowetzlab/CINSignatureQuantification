@@ -11,11 +11,16 @@ getSampleByComponent(object)
 \S4method{getSampleByComponent}{CNQuant}(object)
 }
 \arguments{
-\item{object}{CNQuant object}
+\item{object}{CNQuant object with fitted feature data}
 }
 \value{
 matrix containing the sample-by-component data
 }
 \description{
-getSampleByComponent
+Returns the sample-by-component a \code{CNQuant} or \code{SigQuant} class object.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  Samples <- getSampleByComponent(cnobj[1:10])
 }

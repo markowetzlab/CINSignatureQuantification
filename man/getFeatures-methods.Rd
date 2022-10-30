@@ -11,13 +11,21 @@ getFeatures(object, feat = NULL)
 \S4method{getFeatures}{CNQuant}(object, feat = NULL)
 }
 \arguments{
-\item{object}{CNQuant object}
+\item{object}{CNQuant object containing copy number features}
 
-\item{feat}{name or vector names of features to return. By default returns all features.}
+\item{feat}{name or vector names of features to return. By default returns
+all features.}
 }
 \value{
 list containing the extracted feature data
 }
 \description{
-getFeatures
+Returns the copy number features from a \code{CNQuant} class object. Features
+available will be those extracted as defined by the copy number signature
+method used.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  features <- getFeatures(cnobj)
 }

@@ -14,8 +14,16 @@ getExperiment(object)
 \item{object}{CNQuant object}
 }
 \value{
-A ExpQuant class object
+A \code{ExpQuant} class object
 }
 \description{
-Extracts and returns copy number features from copy number profiles in a CNQuant object.
+Returns the experiment details from a \code{CNQuant} class object.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  getExperiment(cnobj)
+}
+\seealso{
+\linkS4class{ExpQuant}
 }

@@ -13,15 +13,31 @@ clinPredictionDenovo(object, sampTrain, sigsTrain)
 \arguments{
 \item{object}{SigQuant object}
 
-\item{sampTrain}{Vector of sample names that should be used for training the classifier.}
+\item{sampTrain}{Vector of sample names that should be used for training the
+classifier.}
 
-\item{sigsTrain}{Vector with two signature names on which the prediction should be based upon.}
+\item{sigsTrain}{Vector with two signature names on which the prediction
+should be based upon.}
 }
 \value{
-A vector with "Signature <1> higher" or "Signature <2> higher" for all samples in the input object.
+A vector with "Signature <1> higher" or "Signature <2> higher" for
+all samples in the input object.
 }
 \description{
-The function takes signature activities based on Drews et al. methodology and predicts patient's response based on
-user-specified pair of signatures. \cr \cr
-The user should supply a vector of samples for training purposes. The function then trains the classifier on these samples before applying it to all samples and return the labels.
+The function takes signature activities based on Drews et al. methodology and
+predicts patient's response based on user-specified pair of signatures. The
+user should supply a vector of samples for training purposes. The function
+then trains the classifier on these samples before applying it to all samples
+and return the labels.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  t478 <- TCGA_478_Samples_SNP6_GOLD
+  subsample <- unique(t478$sample)[1:10]
+  t478 <- t478[t478$sample \%in\% subsample]
+  cnobj <- quantifyCNSignatures(t478,method="drews")
+  # Not a real predictor
+  cnobj <- clinPredictionDenovo(cnobj,
+             sampTrain = getSamples(cnobj[1:5]),
+             sigsTrain = c("CX1","CX6"))
 }

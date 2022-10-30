@@ -150,3 +150,31 @@ NULL
 #' @usage data(cancerSpecificSignatures)
 #' @format A length 20 named list of character vectors
 NULL
+
+#' TCGA_478_Samples_SNP6_GOLD
+#'
+#' Example data set of 478 pan-cancer samples with detectable CIN in the correct
+#' input format for generating copy number signatures. Data was generated during
+#' the development and submission of "A pan-cancer compendium of CIN" drews et
+#' al. 2022.
+#'
+#' @docType data
+#' @keywords datasets
+#' @name TCGA_478_Samples_SNP6_GOLD
+#' @usage data(TCGA_478_Samples_SNP6_GOLD)
+#' @format A data.frame with 5 columns and 65098 rows.
+NULL
+
+#' test.sample.features
+#'
+#' Example data set of additional example sample features to add to the existing
+#' sample feature data of the 478 pan-cancer samples with detectable CIN. Data
+#' in this dataset are dummy variables only for function testing and examples
+#' and have no meaning.
+#'
+#' @docType data
+#' @keywords datasets
+#' @name test.sample.features
+#' @usage data(test.sample.features)
+#' @format A data.frame with 4 columns and 478 rows.
+NULL
