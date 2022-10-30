@@ -1,6 +1,10 @@
 #' @rdname getFeatures-methods
 #' @aliases getFeatures
 setMethod("getFeatures",signature = "CNQuant",function(object,feat=NULL){
+    if(is.null(object@featData)){
+        stop("no feature data available. Run `quantifyCNSignatures()` or
+             `calculateFeatures()`")
+    }
     if(is.null(feat)){
         object@featData
     } else {
