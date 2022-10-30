@@ -69,6 +69,17 @@ setGeneric("getActivities", function(object,type="threshold") standardGeneric("g
 #'
 setGeneric("getExperiment", function(object) standardGeneric("getExperiment"))
 
+#' getFeatures
+#'
+#' @param object CNQuant object
+#' @param feat name or vector names of features to return. By default returns all features.
+#' @return list containing the extracted feature data
+#' @export
+#' @docType methods
+#' @rdname getFeatures-methods
+#'
+setGeneric("getFeatures", function(object,feat=NULL) standardGeneric("getFeatures"))
+
 #' calculateFeatures
 #'
 #' Extracts and returns copy number features from copy number profiles in a CNQuant object.
