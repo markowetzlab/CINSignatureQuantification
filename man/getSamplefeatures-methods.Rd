@@ -14,8 +14,17 @@ getSamplefeatures(object)
 \item{object}{CNQuant object}
 }
 \value{
-A data.frame
+A data.frame containing the sample-specific features (ploidy, segment
+count, etc.)
 }
 \description{
-Extracts sample feature data from a CNQuant object.
+Extracts sample feature data from a \code{CNQuant} class object.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  SampleFeats <- getSamplefeatures(cnobj[1:10])
+}
+\seealso{
+\code{\link[=addsampleFeatures]{addsampleFeatures()}}
 }

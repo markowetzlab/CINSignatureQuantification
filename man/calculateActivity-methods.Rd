@@ -6,20 +6,61 @@
 \alias{calculateActivity,CNQuant-method}
 \title{calculateActivity}
 \usage{
-calculateActivity(object, method = "drews")
+calculateActivity(object, method = "drews", cancer.subset = NULL)
 
-\S4method{calculateActivity}{CNQuant}(object, method = NULL)
+\S4method{calculateActivity}{CNQuant}(object, method = NULL, cancer.subset = NULL)
 }
 \arguments{
 \item{object}{CNQuant object}
 
-\item{method}{Determines the mixture components used to calculate sum-of-posterior probabilities. Default is "drews".}
+\item{method}{Determines the mixture components used to calculate
+sum-of-posterior probabilities. Default is "drews".}
+
+\item{cancer.subset}{A TCGA cancer subset (e.g. BRCA or KIRC) identifier to
+select a subset of signatures for calculating signature activity.}
 }
 \value{
-A SigQuant class object with four activity matrices stored in the "activities" slot
+A SigQuant class object with four activity matrices stored in the
+"activities" slot
+
+A numeric matrix containing copy number signature activities
 }
 \description{
-Calculates and returns signature activities in a SigQuant object. Works best after function calculateSampleByComponentMatrix call. \cr \cr
-The output of this function is a list of four matrices, the raw signature activities, the normalised activities, the normalised and
-thresholded signature activities and the normalised, thresholded and scaled activities with the scaling factors obtained from the TCGA cohort.
+Calculates and returns signature activities in a \code{SigQuant} class object
+from Sample-By-Component data.
+}
+\details{
+The output of this function is a list of four matrices, the raw
+signature activities, the normalised activities, the normalised and
+thresholded signature activities and the normalised, thresholded and scaled
+activities with the scaling factors obtained from the TCGA cohort.
+\itemize{
+\item \code{raw}:
+Copy number signature activities without any normalisation or zero-exposure
+correction.
+\item \code{normalised}: Copy number signature activities normalised to
+between 0 and 1.0 where each sample sums to 1.0.
+\item \code{threshold}: Copy number
+signature activities which are normalised and have signature activities
+less than a given threshold reduced to zero. This threshold application is
+different for each method where \code{drews} applies a signature-specific
+threshold and \code{mac} applies a uniform threshold for all signatures.
+Threshold-corrected signatures using \code{drews} method may not sum to 1.0 as
+normalisation is not reapplied so as to not inflate signatures
+artificially.
+\item \code{scaled}: Copy number signature activities scaled by the
+signature activity distributions identified in drews et al. 2022 which aims
+to make copy number signature activities from different data sets
+comparable to those generated in the drews et al. 2022 publication.
+}
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- calculateFeatures(cnobj[1:10],method="drews")
+  cnobj <- calculateSampleByComponentMatrix(cnobj)
+  cnobj <- calculateActivity(cnobj)
+}
+\seealso{
+\code{\link[=getActivities]{getActivities()}}
 }

@@ -7,7 +7,8 @@ setMethod(
                           experimentName = "Default",
                           method = "drews",
                           cores = 1,
-                          build = "hg19") {
+                          build = "hg19",
+                          cancer.subset = NULL) {
         # Check method
         if (is.null(method) | !(method %in% c("drews", "mac"))) {
             stop("Method was neither 'drews' nor 'mac'.")
@@ -25,7 +26,8 @@ setMethod(
         cigTCGA = calculateSampleByComponentMatrix(object = cigTCGA, method =
                                                        method)
         # Calculate signature activities
-        cigTCGA = calculateActivity(object = cigTCGA, method = method)
+        cigTCGA = calculateActivity(object = cigTCGA, method = method,
+                                    cancer.subset = cancer.subset)
         return(cigTCGA)
     }
 )

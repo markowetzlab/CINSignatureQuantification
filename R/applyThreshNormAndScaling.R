@@ -1,4 +1,4 @@
-applyThreshNormAndScaling = function(Hraw) {
+applyThreshNormAndScaling = function(Hraw,cancer.subset=NULL) {
 
     # Normalise matrix
     H = t( apply(Hraw, 2, function(x) x/sum(x)) )
@@ -6,6 +6,10 @@ applyThreshNormAndScaling = function(Hraw) {
     # Apply signature-specific thresholds (no renormalising happening in order to avoid inflation of signal)
     #vThresh = get(load("data/Drews2022_TCGA_Signature_Thresholds.rda"))
     vThresh = get(utils::data("Drews2022_TCGA_Signature_Thresholds",envir = environment()))
+    if(!is.null(cancer.subset)){
+        subset = getCancerSpecificSignatures(cancer.subset)
+        vThresh = vThresh[names(vThresh) %in% subset]
+    }
     threshH = sapply(names(vThresh), function(thisSig) {
 
         sigVals = H[,thisSig]
@@ -21,6 +25,11 @@ applyThreshNormAndScaling = function(Hraw) {
     # Scale according to TCGA-specific scaling factors
     #lScales = get(load("data/Drews2022_TCGA_Scaling_Variables.rda"))
     lScales = get(utils::data("Drews2022_TCGA_Scaling_Variables",envir = environment()))
+    if(!is.null(cancer.subset)){
+        subset = getCancerSpecificSignatures(cancer.subset)
+        lScales = lapply(lScales,FUN=function(x){x[names(x) %in% subset]})
+    }
+
     threshScaledH = scaleByModel(threshH, lScales)
 
     # Combine for return

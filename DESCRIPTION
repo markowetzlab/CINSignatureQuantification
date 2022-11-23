@@ -1,6 +1,6 @@
 Package: CINSignatureQuantification
 Title: Simple and quick measuring of copy number signatures in cancers
-Version: 0.0.9
+Version: 1.1.0
 Authors@R: 
     c(person(given = "Philip S",
            family = "Smith",
@@ -38,6 +38,7 @@ Imports:
     stringr (>= 1.4),
     utils
 Suggests:
+    testthat (>= 3.0.0),
     doParallel (>= 1.0.16),
     foreach (>= 1.5.1),
     knitr,
@@ -46,5 +47,6 @@ License: ASL + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1
 VignetteBuilder: knitr
+Config/testthat/edition: 3

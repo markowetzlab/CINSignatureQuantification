@@ -11,7 +11,8 @@ quantifyCNSignatures(
   experimentName = "Default",
   method = "drews",
   cores = 1,
-  build = "hg19"
+  build = "hg19",
+  cancer.subset = NULL
 )
 
 \S4method{quantifyCNSignatures}{ANY}(
@@ -19,23 +20,68 @@ quantifyCNSignatures(
   experimentName = "Default",
   method = "drews",
   cores = 1,
-  build = "hg19"
+  build = "hg19",
+  cancer.subset = NULL
 )
 }
 \arguments{
-\item{object}{input data (segment file - file path or data.frame)}
+\item{object}{input data}
 
 \item{experimentName}{A user-specified name of the experiment}
 
-\item{method}{The method used for calculating the signature activities. Default is "drews"}
+\item{method}{The method used for calculating the signature activities.
+Default is "drews"}
 
 \item{cores}{Number of threads/cores to use for parallel processing}
 
-\item{build}{Genome build to use (default: hg19)}
+\item{build}{Genome build to use, either hg19 or hg38 (default: hg19)}
+
+\item{cancer.subset}{A TCGA cancer subset (e.g. BRCA or KIRC) identifier to
+select a subset of signatures for calculating signature activity}
 }
 \value{
-A SigQuant class object with four activity matrices stored in the "activities" slot
+A SigQuant class object with four activity matrices stored in the
+"activities" slot
 }
 \description{
-This function takes a copy number profile as input and returns signature activities.
+This function acts a wrapper function for the entire copy number signature
+pipeline without the need to specify each step. It takes a copy number
+profile as input and returns a \code{SigQuant} class object containing calculated
+copy number signature activities and all required preceding data.
+}
+\details{
+\itemize{
+\item object: Input for the object parameter should be either a segment
+table, with the fields chromosome, start, end, segVal, and sample or a
+\code{QDNAseqCopyNumbers} class object from the \href{https://github.com/ccagc/QDNAseq}{QDNAseq package}. Segment table input can be an
+existing \code{data.frame} or a file path to an appropriately delimited file
+containing the segment table data.
+\item experimentName: experimentName can be
+a character string to name the \code{CNQuant} class object for future reference.
+It currently has no usage in any functions.
+\item method: method can be either
+"drews" or "mac" and is saved within the Experiment metadata. It is
+utilised in downstream functions to implement a consistent methodology.
+\item cores: Multi-thread/multi-core processing is implemented for a number of
+functions to decrease computation time and is implemented through the
+\href{https://cran.r-project.org/web/packages/doParallel/index.html}{doParallel package}.
+\item build: character string to specify the genome build to use when extracting
+copy number features. Only human data using either hg19 or hg38 is
+currently supported.
+\item cancer.subset: cancer.subset parameter allows users
+to calculate copy number signature activities for subsets of the copy
+number signatures defined in drews et al. 2022 which are specific to a
+given cancer type. Cancer subsets match the initialism used by TCGA (e.g
+KIRC, BRCA).
+}
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  t478 <- TCGA_478_Samples_SNP6_GOLD
+  subsample <- unique(t478$sample)[1:10]
+  t478 <- t478[t478$sample \%in\% subsample]
+  cnobj <- quantifyCNSignatures(t478,method="drews")
+}
+\seealso{
+\code{\link[=createCNQuant]{createCNQuant()}}
 }

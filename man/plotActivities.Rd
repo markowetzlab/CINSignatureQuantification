@@ -4,16 +4,33 @@
 \alias{plotActivities}
 \title{plotActivities}
 \usage{
-plotActivities(object)
+plotActivities(object, type = "threshold", cols = NULL)
 }
 \arguments{
-\item{object}{A SigQuant class object}
+\item{object}{A SigQuant class object containing}
+
+\item{type}{type of copy number signature matrix to return 'raw', 'norm',
+'threshold', or 'scaled' (default: threshold).}
+
+\item{cols}{Vector of colours of the same length as number of copy number
+signatures.}
 }
 \value{
 plot
 }
 \description{
-Plot the copy number signature activites for a given CNQuant or SigQuant class object
+Plot the copy number signature activities for a given SigQuant class object
 containing copy number signature activities/exposures. Default ordering by
-signature CX1
+decreasing exposure to signature CX1.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  t478 <- TCGA_478_Samples_SNP6_GOLD
+  subsample <- unique(t478$sample)[1:10]
+  t478 <- t478[t478$sample \%in\% subsample]
+  cnobj <- quantifyCNSignatures(t478)
+  activities <- plotActivities(cnobj,type="threshold")
+}
+\seealso{
+\code{\link[=getActivities]{getActivities()}}
 }

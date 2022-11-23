@@ -7,15 +7,26 @@
 plotSegments(object = NULL, sample = NULL, cn.max = 15)
 }
 \arguments{
-\item{object}{A CNQuant or SigQuant class object}
+\item{object}{CNQuant or SigQuant class object}
 
-\item{sample}{A vector of length 1 containing either a sample name or sample index}
+\item{sample}{vector of length 1 containing either a sample name or sample
+index}
 
-\item{cn.max}{Maximum copy number to plot - Values over this are truncated to fit}
+\item{cn.max}{maximum copy number to plot - Values greater than this are
+truncated to the specified value}
 }
 \value{
 plot
 }
 \description{
-Plot the segment data for a given sample stored in a CNQuant or SigQuant class object
+Plot the segment data for a given sample stored in a CNQuant or SigQuant
+class object.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  segments <- plotSegments(cnobj,sample=1,cn.max=15)
+}
+\seealso{
+\code{\link[=getSegments]{getSegments()}}
 }

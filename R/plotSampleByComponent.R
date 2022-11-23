@@ -1,11 +1,22 @@
 #' plotSampleByComponent
 #'
-#' Plots a heatmap of the sample-by-component matrix
+#' Plots a heatmap of the sample-by-component matrix. By default, feature
+#' components are not clustered or ordered and listed in order provided and
+#' scaling is applied across columns. Additional options can by provided to
+#' alter the heat map rendered by [stats::heatmap()].
 #'
-#' @param object a CNQuant or SigQuant class object
+#' @param object CNQuant or SigQuant class object containing a computed
+#'   sample-by-component matrix
 #' @param ... additional parameters passed to \link[stats]{heatmap}
 #'
 #' @return plot
+#' @examples
+#'   data(TCGA_478_Samples_SNP6_GOLD)
+#'   cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+#'   cnobj <- calculateFeatures(cnobj[1:10],method="drews")
+#'   cnobj <- calculateSampleByComponentMatrix(cnobj)
+#'   plotSampleByComponent(cnobj)
+#' @seealso [getSampleByComponent()]
 #' @export plotSampleByComponent
 #'
 plotSampleByComponent <- function(object=NULL,...){
@@ -16,5 +27,8 @@ plotSampleByComponent <- function(object=NULL,...){
         stop("feature fitting not calculated")
     }
     plotData <- object@featFitting$sampleByComponent
-    stats::heatmap(x = plotData,...)
+    stats::heatmap(x = plotData,
+                   scale="col",
+                   Colv = NA,
+                   ...)
 }

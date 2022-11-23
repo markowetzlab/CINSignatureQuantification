@@ -11,13 +11,21 @@ addsampleFeatures(object, sample.data = NULL, id.col = "sample")
 
 \item{sample.data}{data.frame containing sample-level variables}
 
-\item{id.col}{column containing sample identifiers}
+\item{id.col}{column containing sample identifiers (default: "sample")}
 }
 \value{
 CNQuant or SigQuant object with updated samplefeatData
 }
 \description{
-Adds custom sample-level data to the samplefeatData field of a CNQuant or SigQuant object.
-This can be additional sample information (purity, tumour type, etc.) that can
-be used in downstream analysis.
+\code{addsampleFeatures} adds custom sample-level data to the samplefeatData field
+of a \code{CNQuant} or \code{SigQuant} class object. This can be additional sample
+information (e.g. purity, tumour type, etc.) that can be stored within the
+object and used in downstream analysis.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  data(test.sample.features)
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- addsampleFeatures(cnobj,sample.data=test.sample.features)
+  getSamplefeatures(cnobj)
 }

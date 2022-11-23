@@ -4,23 +4,44 @@
 \name{SigQuant-class}
 \alias{SigQuant-class}
 \alias{SigQuant}
-\title{SigQuant}
+\title{SigQuant class}
 \description{
-SigQuant
+The \code{SigQuant} class is an extension of the \code{CNQuant} S4 class object
+designed to contain copy number and copy number signature-related data. This
+class is initialised on generation of copy number signature definitions or
+activities from \code{CNQuant} class object with the necessary fitted feature
+data. It inherits all slots from \code{CNQuant} and adds six additional slots.
 }
 \section{Slots}{
 
 \describe{
-\item{\code{activities}}{list}
+\item{\code{activities}}{Object of type \code{"list"} containing matrices for each
+calculated copy number signature activity matrix including raw, normalised,
+threshold-adjusted, and scaled signature activities. Access with
+\code{\link[=getActivities]{getActivities()}}.}
 
-\item{\code{signature.model}}{character}
+\item{\code{signature.model}}{Object of type \code{"character"} specifying the methodology
+used to calculate copy number signatures.}
 
-\item{\code{backup.signatures}}{matrix}
+\item{\code{backup.signatures}}{bject of type \code{"matrix"} containing the copy number
+signature defintions matrix (signature-by-component) used to calculate the
+copy number signature activities.}
 
-\item{\code{backup.thresholds}}{numeric}
+\item{\code{backup.thresholds}}{Object of type \code{"numeric"} containing the uniform or
+signature-specific thresholds applied to the normalised copy number
+signature activities at which to reduce activity to zero based on signature
+noise simulations.}
 
-\item{\code{backup.scale}}{list}
+\item{\code{backup.scale}}{Object of type \code{"list"} containing two numeric vectors
+corresponding to the mean and scaling parameter for each of the copy number
+signature activities used to generate the scaled activities matrix.}
 
-\item{\code{backup.scale.model}}{character}
+\item{\code{backup.scale.model}}{Object of type \code{"character"} specifying the scale
+model used to generate the scaled signature activities.}
 }}
 
+\seealso{
+\linkS4class{CNQuant}
+
+\code{\link[=createCNQuant]{createCNQuant()}}
+}

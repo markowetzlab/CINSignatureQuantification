@@ -4,25 +4,43 @@
 \name{ExpQuant-class}
 \alias{ExpQuant-class}
 \alias{ExpQuant}
-\title{ExpQuant object}
+\title{ExpQuant class}
 \description{
-ExpQuant object
+The \code{ExpQuant} class is an accessory class providing meta data documentation
+used by \code{CNQuant} and \code{SigQuant} classes. The \code{ExpQuant} class stores:
+Experiment name, initialisation time,last modified time, total sample count,
+current sample count, genomic build, and specified method
 }
 \section{Slots}{
 
 \describe{
-\item{\code{experimentName}}{character}
+\item{\code{experimentName}}{Object of type \code{"character"} containing the name
+specified for the \code{CNQuant} class object by \code{\link[=createCNQuant]{createCNQuant()}} or
+\code{\link[=quantifyCNSignatures]{quantifyCNSignatures()}}.}
 
-\item{\code{init.date}}{character}
+\item{\code{init.date}}{Object of type \code{"character"} containing the date at which
+copy number data was initially loaded into the \code{CNQuant} class object.}
 
-\item{\code{last.modified}}{character}
+\item{\code{last.modified}}{Object of type \code{"character"} containing the date at which
+the \code{CNQuant} or \code{SigQuant} class object was last modified by a function
+which adds or modifies a slot of the described class.}
 
-\item{\code{samples.full}}{numeric}
+\item{\code{samples.full}}{Object of type \code{"numeric"} containing total number of
+samples provided on object initialisation.}
 
-\item{\code{samples.current}}{numeric}
+\item{\code{samples.current}}{Object of type \code{"numeric"} containing current number of
+samples within the object.}
 
-\item{\code{build}}{character}
+\item{\code{build}}{Object of type \code{"character"} containing the specified genome
+build (hg19 or hg38) by \code{\link[=createCNQuant]{createCNQuant()}} or \code{\link[=quantifyCNSignatures]{quantifyCNSignatures()}}.}
 
-\item{\code{feature.method}}{character}
+\item{\code{feature.method}}{Object of type \code{"character"} containing the specified
+copy number signatures method for the \code{CNQuant} class object by
+\code{\link[=createCNQuant]{createCNQuant()}} or \code{\link[=quantifyCNSignatures]{quantifyCNSignatures()}}.}
 }}
 
+\seealso{
+\linkS4class{CNQuant}
+
+\code{\link[=createCNQuant]{createCNQuant()}}
+}

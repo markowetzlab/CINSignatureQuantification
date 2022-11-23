@@ -14,8 +14,13 @@ getSamples(object)
 \item{object}{CNQuant object}
 }
 \value{
-A character vector
+character vector containing all available sample names
 }
 \description{
-Extracts sample names from a CNQuant object.
+Returns sample names from a CNQuant class object.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  Samples <- getSamples(cnobj[1:10])
 }

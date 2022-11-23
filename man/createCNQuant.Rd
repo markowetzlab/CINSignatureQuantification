@@ -13,13 +13,45 @@ createCNQuant(
 \arguments{
 \item{data}{Unrounded absolute copy number data}
 
-\item{experimentName}{A name for the experiment (default: defaultExperiment)}
+\item{experimentName}{A user-specified name of the experiment}
 
-\item{build}{A genome build specified as either hg19 or hg38 (default: hg19)}
+\item{build}{Genome build to use, either hg19 or hg38 (default: hg19)}
 }
 \value{
 A CNQuant class object
 }
 \description{
-createCNQuant
+createCNQuant is the class initialisation function. It takes segmented copy
+number profiles as input and generates a \code{CNQuant} class object with
+standardised input slots for downstream processing.
+}
+\details{
+\itemize{
+\item data: Input data for this function should be unrounded (or
+rounded) copy number data which can be provided in various formats. In the
+first instance, copy number data can be a delimited file containing segment
+data for all samples with the following fields;
+"chromosome","start","end","segVal" & "sample". This should be specified as
+a file path. Secondly, data can be loaded as a data.frame object with the
+same fields specified previously and provided as the input data. Lastly, a
+\code{QDNAseqCopyNumbers} class object from the \href{https://github.com/ccagc/QDNAseq}{QDNAseq package} can be used as an input file,
+from which a segment table is extracted.
+\itemize{
+\item experimentName: experimentName can be a character string to name the
+\code{CNQuant} class object for future reference. It currently has no usage in
+any functions.
+\item build: character string to specify the genome build to use when extracting
+copy number features. Only human data using either hg19 or hg38 is
+currently supported.
+}
+}
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD,experimentName="myExp",build="hg19")
+}
+\seealso{
+\linkS4class{CNQuant}
+
+\code{\link[=quantifyCNSignatures]{quantifyCNSignatures()}}
 }
