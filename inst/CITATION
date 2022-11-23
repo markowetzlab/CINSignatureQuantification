@@ -6,14 +6,14 @@ citEntry(
   author   = personList(as.person("Ruben Drews")),
   journal  = "Nature",
   year     = "2022",
-  volume   = "",
-  number   = "",
-  pages    = "",
-  url      = "",
+  volume   = "606",
+  number   = "7916",
+  pages    = "976-983",
+  doi      = "10.1038/s41586-022-04789-9",
   textVersion = paste("Drews et al.",
                     "A pan-cancer compendium of chromosomal instability",
                     "Nature (2022)",
-                    "<doi:##>."
+                    "<doi:10.1038/s41586-022-04789-9>."
   )
 )
 
