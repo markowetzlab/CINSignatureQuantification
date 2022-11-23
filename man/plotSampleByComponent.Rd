@@ -7,7 +7,8 @@
 plotSampleByComponent(object = NULL, ...)
 }
 \arguments{
-\item{object}{a CNQuant or SigQuant class object}
+\item{object}{CNQuant or SigQuant class object containing a computed
+sample-by-component matrix}
 
 \item{...}{additional parameters passed to \link[stats]{heatmap}}
 }
@@ -15,5 +16,18 @@ plotSampleByComponent(object = NULL, ...)
 plot
 }
 \description{
-Plots a heatmap of the sample-by-component matrix
+Plots a heatmap of the sample-by-component matrix. By default, feature
+components are not clustered or ordered and listed in order provided and
+scaling is applied across columns. Additional options can by provided to
+alter the heat map rendered by \code{\link[stats:heatmap]{stats::heatmap()}}.
+}
+\examples{
+  data(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- calculateFeatures(cnobj[1:10],method="drews")
+  cnobj <- calculateSampleByComponentMatrix(cnobj)
+  plotSampleByComponent(cnobj)
+}
+\seealso{
+\code{\link[=getSampleByComponent]{getSampleByComponent()}}
 }

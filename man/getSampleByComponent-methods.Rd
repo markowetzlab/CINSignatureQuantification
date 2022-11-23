@@ -22,5 +22,7 @@ Returns the sample-by-component a \code{CNQuant} or \code{SigQuant} class object
 \examples{
   data(TCGA_478_Samples_SNP6_GOLD)
   cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
-  Samples <- getSampleByComponent(cnobj[1:10])
+  cnobj <- calculateFeatures(cnobj[1:10],method="drews")
+  cnobj <- calculateSampleByComponentMatrix(cnobj)
+  SampleByComponent <- getSampleByComponent(cnobj)
 }

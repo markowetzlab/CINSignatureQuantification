@@ -27,5 +27,6 @@ method used.
 \examples{
   data(TCGA_478_Samples_SNP6_GOLD)
   cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- calculateFeatures(cnobj[1:10],method="drews")
   features <- getFeatures(cnobj)
 }

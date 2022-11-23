@@ -23,9 +23,9 @@ methodology and predicts response to platinum-based chemo-therapeutics.
 }
 \examples{
   data(TCGA_478_Samples_SNP6_GOLD)
-  t478 <- TCGA_478_Samples_SNP6_GOLD
-  subsample <- unique(t478$sample)[1:10]
-  t478 <- t478[t478$sample \%in\% subsample]
-  cnobj <- quantifyCNSignatures(t478,method="drews")
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- calculateFeatures(cnobj[1:10],method="drews")
+  cnobj <- calculateSampleByComponentMatrix(cnobj)
+  cnobj <- calculateActivity(cnobj)
   cnobj <- clinPredictionPlatinum(cnobj)
 }

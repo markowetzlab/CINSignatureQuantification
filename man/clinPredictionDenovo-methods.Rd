@@ -32,10 +32,10 @@ and return the labels.
 }
 \examples{
   data(TCGA_478_Samples_SNP6_GOLD)
-  t478 <- TCGA_478_Samples_SNP6_GOLD
-  subsample <- unique(t478$sample)[1:10]
-  t478 <- t478[t478$sample \%in\% subsample]
-  cnobj <- quantifyCNSignatures(t478,method="drews")
+  cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+  cnobj <- calculateFeatures(cnobj[1:10],method="drews")
+  cnobj <- calculateSampleByComponentMatrix(cnobj)
+  cnobj <- calculateActivity(cnobj)
   # Not a real predictor
   cnobj <- clinPredictionDenovo(cnobj,
              sampTrain = getSamples(cnobj[1:5]),

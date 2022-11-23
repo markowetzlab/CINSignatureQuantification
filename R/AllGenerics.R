@@ -22,7 +22,9 @@ setGeneric("getSamples", function(object) standardGeneric("getSamples"))
 #' @examples
 #'   data(TCGA_478_Samples_SNP6_GOLD)
 #'   cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
-#'   Samples <- getSampleByComponent(cnobj[1:10])
+#'   cnobj <- calculateFeatures(cnobj[1:10],method="drews")
+#'   cnobj <- calculateSampleByComponentMatrix(cnobj)
+#'   SampleByComponent <- getSampleByComponent(cnobj)
 #' @export
 #' @docType methods
 #' @rdname getSampleByComponent-methods
@@ -90,10 +92,10 @@ setGeneric("getSegments", function(object) standardGeneric("getSegments"))
 #' @return A numeric matrix containing copy number signature activities
 #' @examples
 #'   data(TCGA_478_Samples_SNP6_GOLD)
-#'   t478 <- TCGA_478_Samples_SNP6_GOLD
-#'   subsample <- unique(t478$sample)[1:10]
-#'   t478 <- t478[t478$sample %in% subsample]
-#'   cnobj <- quantifyCNSignatures(t478)
+#'   cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+#'   cnobj <- calculateFeatures(cnobj[1:10],method="drews")
+#'   cnobj <- calculateSampleByComponentMatrix(cnobj)
+#'   cnobj <- calculateActivity(cnobj)
 #'   activities <- getActivities(cnobj,type="threshold")
 #' @export
 #' @docType methods
@@ -131,6 +133,7 @@ setGeneric("getExperiment", function(object) standardGeneric("getExperiment"))
 #' @examples
 #'   data(TCGA_478_Samples_SNP6_GOLD)
 #'   cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+#'   cnobj <- calculateFeatures(cnobj[1:10],method="drews")
 #'   features <- getFeatures(cnobj)
 #' @export
 #' @docType methods
@@ -305,10 +308,10 @@ setGeneric("quantifyCNSignatures",function(object, experimentName="Default",
 #'   samples in the input object.
 #' @examples
 #'   data(TCGA_478_Samples_SNP6_GOLD)
-#'   t478 <- TCGA_478_Samples_SNP6_GOLD
-#'   subsample <- unique(t478$sample)[1:10]
-#'   t478 <- t478[t478$sample %in% subsample]
-#'   cnobj <- quantifyCNSignatures(t478,method="drews")
+#'   cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+#'   cnobj <- calculateFeatures(cnobj[1:10],method="drews")
+#'   cnobj <- calculateSampleByComponentMatrix(cnobj)
+#'   cnobj <- calculateActivity(cnobj)
 #'   cnobj <- clinPredictionPlatinum(cnobj)
 #' @export
 #' @docType methods
@@ -334,10 +337,10 @@ setGeneric("clinPredictionPlatinum",function(object)
 #'   all samples in the input object.
 #' @examples
 #'   data(TCGA_478_Samples_SNP6_GOLD)
-#'   t478 <- TCGA_478_Samples_SNP6_GOLD
-#'   subsample <- unique(t478$sample)[1:10]
-#'   t478 <- t478[t478$sample %in% subsample]
-#'   cnobj <- quantifyCNSignatures(t478,method="drews")
+#'   cnobj <- createCNQuant(TCGA_478_Samples_SNP6_GOLD)
+#'   cnobj <- calculateFeatures(cnobj[1:10],method="drews")
+#'   cnobj <- calculateSampleByComponentMatrix(cnobj)
+#'   cnobj <- calculateActivity(cnobj)
 #'   # Not a real predictor
 #'   cnobj <- clinPredictionDenovo(cnobj,
 #'              sampTrain = getSamples(cnobj[1:5]),

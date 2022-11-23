@@ -1,7 +1,7 @@
 ## Testing ground for package and functions
 
 # - CHECK E/W/N
-#   - Non-standard license
+# - Non-standard license
 
 # Load library
 library(CINSignatureQuantification)
