@@ -174,17 +174,17 @@ clinPredictionDenovo(cnobj,
 ```
 ## Plotting functions
 
-```{r segmentPlots}
+```{r segmentPlots,fig.align='center',fig.width=6}
 # Sample can be specified as a numerical index or sample name
 plotSegments(object = cnobj,sample = 1,cn.max = 8)
 ```
 
-```{r SxCPlots}
-# Additional arguments can be provided for the heatmap() function, such as "main" shown in the example below
-plotSampleByComponent(object = cnobj,main="VignetteExample")
+```{r SxCPlots,fig.align='center',fig.width=6}
+# Additional arguments can be provided for the heatmap() function
+plotSampleByComponent(object = cnobj)
 ```
 
-```{r activitiesPlots}
+```{r activitiesPlots,fig.align='center',fig.width=6}
 # custom colours for signatures can be provided with the cols argument, the length of which must match the number of signatures
 plotActivities(object = cnobj,type = "threshold")
 ```
