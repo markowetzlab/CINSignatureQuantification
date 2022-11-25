@@ -66,6 +66,8 @@ If you want to use the signature activities to predict response to platinum-base
 vPredictions = clinPredictionPlatinum(mySigs)
 ```
 
+See the package vignette for a more detailed explanation of usage and functions.
+
 # Maintenance & help
 
 For any code bugs, feature requests, or implementation errors, please open an issue. For more information on obtaining copy number profiles, please refer to the documentation of common copy number callers like [ASCAT](https://github.com/VanLoo-lab/ascat) or [ABSOLUTE](https://github.com/ShixiangWang/DoAbsolute). More information on how to work with and generate copy number signatures can be obtained from: [Drews et al. (Nature, 2022)](https://www.nature.com/articles/s41586-022-04789-9) or [Macintyre et al. (Nature Genetics, 2018)](https://www.nature.com/articles/s41588-018-0179-8).

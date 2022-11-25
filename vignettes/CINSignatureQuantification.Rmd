@@ -1,0 +1,194 @@
+---
+title: "CINSignatureQuantification"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{CINSignatureQuantification}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(CINSignatureQuantification)
+```
+
+An example data set is provided in this package. This data is a `data.frame` containing segmented copy number data for 478 samples with detectable chromosomal instability (CIN).
+
+```{r load data}
+data("TCGA_478_Samples_SNP6_GOLD")
+head(TCGA_478_Samples_SNP6_GOLD)
+```
+## Load data
+
+The first step is to load the data into the `CNQuant` object. This is a S4 class object which standardises the input and additional meta data for downstream analysis. Here the `data` argument can be a loaded R data.frame object (as shown in this vignette), a file path to a delimited file, or a `QDNAseqCopyNumbers` object from [QDNASeq](https://github.com/ccagc/QDNAseq) which has been segmented. A name for the experiment and the genome build to use are also specified. Viewing this object will print details of the contained data.
+
+```{r createCNQuant}
+cnobj <- createCNQuant(data = TCGA_478_Samples_SNP6_GOLD,experimentName = "VignetteExample",build = "hg19")
+cnobj
+```
+### CNQuant object
+
+Additional meta data can be retrieved with `getExperiment()`
+
+```{r getExp}
+getExperiment(cnobj)
+```
+
+The `CNQuant` object contains slots for all the required prerequisite data for copy number signature analysis. Of these, 
+
+```{r CNQuant_segs}
+# Returns the original segment table
+segmentTable <- getSegments(cnobj)
+head(segmentTable)
+```
+
+```{r CNQuant_samples}
+# Returns all sample ids 
+getSamples(cnobj)[1:10]
+```
+
+```{r CNQuant_sampleFeatures}
+# Returns sample features computed on CNQuant initialisation
+Samplefeatures <- getSamplefeatures(cnobj)
+head(Samplefeatures)
+```
+
+If you have additional sample features or clinical data you can add those to the object using the `addsampleFeatures()` function.
+
+```{r CNQuant_sampleFeatures2}
+data(test.sample.features)
+head(test.sample.features)
+```
+
+```{r CNQuant_sampleFeatures3}
+cnobj <- addsampleFeatures(object = cnobj,sample.data = test.sample.features,id.col = "sample")
+NewSamplefeatures <- getSamplefeatures(cnobj)
+head(NewSamplefeatures)
+```
+
+Sub setting of `CNQuant` objects is implemented using the native R bracket `[` notation. This can be performed using either numerical indexing or specifying available sample identifiers. This sub setting functions at any point in the analysis pipeline.
+
+```{r subsetting1}
+cnobj[1:10]
+```
+
+```{r subsetting2}
+cnobj[c(1,24,5,77,100)]
+```
+
+```{r subsetting2}
+cnobj[getSamples(cnobj)[1:10]]
+```
+
+For the sake of computational efficiency, we will subset the full data set to 20 samples.
+
+```{r vignette_dataset}
+cnobj <- cnobj[1:20]
+cnobj
+```
+
+## Calculate features
+
+Feature distributions can be calculate using the `calculateFeatures()` function. 
+
+```{r calcFeats}
+cnobj <- calculateFeatures(object = cnobj,method = "drews",cores = 1)
+cnobj
+```
+
+These features can be retrieved as follows
+
+```{r getFeats}
+# Returns list of data.frames containing the computed copy number features
+feats <- getFeatures(cnobj)
+head(feats[[1]])
+```
+## Calculate Sample-by-component
+
+```{r calcSxC}
+cnobj <- calculateSampleByComponentMatrix(object = cnobj)
+cnobj
+```
+
+The sample-by-component matrix can be retrieved as follows
+
+```{r getSxC}
+# Returns the computed sample-by-component matrix
+SxC <- getSampleByComponent(cnobj)
+head(SxC)
+```
+
+## Calculate signature activites
+
+```{r calcSxC}
+cnobj <- calculateActivity(object = cnobj)
+cnobj
+```
+
+The sample-by-signature activity matrix can be retrieved as follows
+
+```{r getSxC}
+# Returns the computed sample-by-component matrix
+sigAct <- getActivities(cnobj,type = "threshold")
+head(sigAct)
+```
+
+## One-click function
+
+A wrapper function is provided to allow the entire pipeline to run as a singe command. Here the output object is a `SigQuant` object with all slots and calculations performed.
+
+```{r quantSub}
+# Subset samples from the total dataset
+subsample <- as.character(sample(TCGA_478_Samples_SNP6_GOLD$sample,size = 20))
+TCGA_478_Samples_SNP6_GOLD_subset <- TCGA_478_Samples_SNP6_GOLD[TCGA_478_Samples_SNP6_GOLD$sample %in% subsample,]
+```
+
+```{r quantFull}
+cnobj <- quantifyCNSignatures(object = TCGA_478_Samples_SNP6_GOLD_subset,
+                              experimentName = "VignetteExample",
+                              method = "drews",
+                              cores = 1,
+                              build = "hg19")
+cnobj
+```
+
+## Clinical predictors
+
+Clinical predictor functions are provided to allow for binary classification of samples based on signature activities. This includes the platinum-based treatment response predictor included in the associated publication and a function to construct custom classifications.
+
+```{r clinPt}
+clinPredictionPlatinum(object = cnobj)
+```
+
+```{r clinDenov}
+# Not a real predictor
+clinPredictionDenovo(cnobj,
+             sampTrain = getSamples(cnobj[1:5]),
+             sigsTrain = c("CX1","CX6"))
+```
+## Plotting functions
+
+```{r segmentPlots}
+# Sample can be specified as a numerical index or sample name
+plotSegments(object = cnobj,sample = 1,cn.max = 8)
+```
+
+```{r SxCPlots}
+# Additional arguments can be provided for the heatmap() function, such as "main" shown in the example below
+plotSampleByComponent(object = cnobj,main="VignetteExample")
+```
+
+```{r activitiesPlots}
+# custom colours for signatures can be provided with the cols argument, the length of which must match the number of signatures
+plotActivities(object = cnobj,type = "threshold")
+```
+
+```{r sessionInfo}
+sessionInfo()
+```
