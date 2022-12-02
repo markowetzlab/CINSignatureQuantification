@@ -73,8 +73,9 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
             #     segTable <- split(segTable,f = as.factor(segTable$sample))
             # }
             ## Temp split until fixed bin input implemented
-            segTable <- droplevels(segTable)
             segTable$chromosome <- checkChromosomeFormat(segTable$chromosome)
+            segTable <- dropChromosomes(segTable)
+            segTable <- droplevels(segTable)
             segTable <- split(segTable,f = as.factor(segTable$sample))
 
             samplefeatData <- generateSampleFeatData(x = segTable)
@@ -92,8 +93,9 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
                     defined on unrounded absolute copy numbers, use caution when
                     interpretting and comparing between rounded and unrounded inputs.")
         }
-        segTable <- droplevels(segTable)
         segTable$chromosome <- checkChromosomeFormat(segTable$chromosome)
+        segTable <- dropChromosomes(segTable)
+        segTable <- droplevels(segTable)
         segTable <- split(segTable,f = as.factor(segTable$sample))
         samplefeatData <- generateSampleFeatData(x = segTable)
         methods::new("CNQuant",segments = segTable,samplefeatData = samplefeatData,
@@ -121,8 +123,9 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
         #     segTable <- split(segTable,f = as.factor(segTable$sample))
         # }
         ## Temp split until fixed bin input implemented
-        segTable <- droplevels(segTable)
         segTable$chromosome <- checkChromosomeFormat(segTable$chromosome)
+        segTable <- dropChromosomes(segTable)
+        segTable <- droplevels(segTable)
         segTable <- split(segTable,f = as.factor(segTable$sample))
         samplefeatData <- generateSampleFeatData(x = segTable)
         methods::new("CNQuant",segments=segTable,samplefeatData = samplefeatData,

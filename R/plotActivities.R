@@ -89,7 +89,9 @@ plotActivities <- function(object,type="threshold",cols=NULL){
     clms <- 1
     l.pos <- -0.1
 
-    plotdata <- plotdata[order(plotdata[,1],decreasing = T),]
+    if(nrow(plotdata) > 1){
+        plotdata <- plotdata[order(plotdata[,1],decreasing = T),]
+    }
     tabl <- t(as.matrix(plotdata))
 
     graphics::par(mar=c(5, 4, 4, 8), xpd=TRUE)
