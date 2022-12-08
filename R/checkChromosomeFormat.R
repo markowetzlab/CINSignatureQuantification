@@ -3,7 +3,7 @@ checkChromosomeFormat <- function(x=NULL){
     if(is.null(x)){
         stop("no chromosome col")
     }
-    chrs <- c(seq.int(1:22),c("X"))
+
     # Catch chr prefix
     if(any(grepl(pattern = "chr",x = x))){
         message("checkChromosomeFormat: dropping 'chr' prefix")
@@ -15,12 +15,5 @@ checkChromosomeFormat <- function(x=NULL){
         x[x=="23"] <- "X"
         x[x=="24"] <- "Y"
     }
-
-    if(any(!x %in% chrs)){
-        message("checkChromosomeFormat: dropping unsupported chromsomes")
-        x <- x[x %in% chrs]
-    }
-    # return
-    x <- as.factor(x)
     return(x)
 }
