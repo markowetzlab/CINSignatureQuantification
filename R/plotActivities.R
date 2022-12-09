@@ -20,7 +20,7 @@
 #' @seealso [getActivities()]
 #' @export plotActivities
 #'
-plotActivities <- function(object,type="threshold",cols=NULL){
+plotActivities <- function(object=NULL,type="threshold",cols=NULL){
     if(is.null(object)){
         stop("No object provided")
     }
