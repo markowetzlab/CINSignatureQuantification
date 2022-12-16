@@ -16,7 +16,10 @@
 #'   cnobj <- addsampleFeatures(cnobj,sample.data=test.sample.features)
 #'   getSamplefeatures(cnobj)
 #' @export
-addsampleFeatures <- function(object,sample.data=NULL,id.col = "sample"){
+addsampleFeatures <- function(object=NULL,sample.data=NULL,id.col = "sample"){
+    if(is.null(object)){
+        stop("No object provided")
+    }
     if(!class(object) %in% c("CNQuant","SigQuant")){
         stop("this function requires a CNQuant or SigQuant class object")
     }
@@ -31,11 +34,11 @@ addsampleFeatures <- function(object,sample.data=NULL,id.col = "sample"){
     }
     sampFeat <- object@samplefeatData
     newDataSamples <- sample.data[,which(colnames(sample.data) == id.col)]
-    if(!all(newDataSamples %in% rownames(sampFeat))){
+    if(!any(newDataSamples %in% rownames(sampFeat))){
         stop("no overlapping samples in sample.data")
     }
     mergedsampfeats <- merge.data.frame(sampFeat,sample.data,by.x = "row.names",
-                                        by.y = id.col,all = T)
+                                        by.y = id.col,all.x = T)
     rownames(mergedsampfeats) <- mergedsampfeats$Row.names
     mergedsampfeats <- mergedsampfeats[,-1]
     if(!all(rownames(mergedsampfeats) == names(object@segments))){
