@@ -3,7 +3,7 @@
 setMethod("clinPredictionDenovo",
           signature=c(object="SigQuant"),
           definition=function(object, sampTrain, sigsTrain){
-              stop("this function is depreciated")
+              message("this function is depreciated")
               # if(getExperiment(object)@feature.method != "drews"){
               #     stop("This function is only applicable to objects using drews method.")
               # }
