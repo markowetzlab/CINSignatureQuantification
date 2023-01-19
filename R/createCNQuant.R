@@ -47,18 +47,13 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
         if(file.exists(data)){
             header <- colnames(data.table::fread(input = data,
                                                  header = T,
-                                                 colClasses = c("character",
-                                                                "numeric","numeric",
-                                                                "numeric","character"),
                                                  nrows = 1))
-            if(!any(header == c("chromosome","start","end","segVal","sample"))){
-                stop("Header does not match the required naming")
+            if(!all(header %in% c("chromosome","start","end","segVal","sample"))){
+                stop("Header does not match the required naming ['chromosome','start','end','segVal','sample']")
             }
             segTable <- data.table::fread(input = data,
-                                          header = T,
-                                          colClasses = c("character","numeric",
-                                                         "numeric","numeric",
-                                                         "character"))
+                                          header = T)
+            segTable <- segTable[,c("chromosome","start","end","segVal","sample")]
             if(checkSegValRounding(segTable$segVal)){
                 warning("segVal appears to be rounded, copy number signatures
                         were defined on unrounded absolute copy numbers, use
@@ -110,6 +105,7 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
             stop("Header does not match the required naming ['chromosome','start','end','segVal','sample']")
         }
         segTable <- data
+        segTable <- segTable[,c("chromosome","start","end","segVal","sample")]
         if(checkSegValRounding(segTable$segVal)){
             warning("segVal appears to be rounded, copy number signatures were
                     defined on unrounded absolute copy numbers, use caution when
