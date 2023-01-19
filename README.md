@@ -4,7 +4,7 @@
 [![minimal R version](https://img.shields.io/badge/R%3E%3D-3.6.0-blue.svg)](https://cran.r-project.org/)
 <!-- badges: end -->
 
-R package to quantify signatures of chromosomal instability on absolute copy number profiles.
+R package to quantify signatures of chromosomal instability on absolute copy number profiles as described in [Drews et al. (Nature, 2022)](https://www.nature.com/articles/s41586-022-04789-9).
 
 # Introduction
 
