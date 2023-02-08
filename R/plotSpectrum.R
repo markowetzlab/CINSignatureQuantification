@@ -16,7 +16,7 @@
 #'   subsample <- unique(t478$sample)[1:10]
 #'   t478 <- t478[t478$sample %in% subsample]
 #'   cnobj <- quantifyCNSignatures(t478)
-#'   activities <- plotSpectrum(cnobj,type="threshold")
+#'   plotSpectrum(cnobj,sample = 1)
 #' @seealso [getSampleByComponent()]
 #' @export plotSpectrum
 #'
@@ -71,15 +71,16 @@ plotSpectrum <- function(object,sample=NULL,cols=NULL){
                                        function(x){
                                            sum(grepl(pattern = x,
                                                      x = colnames(sxc)))
-        }))
+                                       }))
         default.cols <- c("#F8766D","#B79F00","#00BA38","#00BFC4","#619CFF","#F564E3")
+        names(default.cols) <- c("segsize","changepoint","bp10MB","bpchrarm","osCN","copynumber")
         switch(method,
                mac={
                    featcols <- default.cols
                },
                drews={
                    featcols <- default.cols[1:5]
-        })
+               })
         cols <- rep(featcols,times=cols.per.feat)
         if(n.components != length(cols)){
             stop("Colour lengths do not match")
@@ -89,12 +90,34 @@ plotSpectrum <- function(object,sample=NULL,cols=NULL){
     samp.name <- ifelse(is.numeric(sample),samp[sample],sample)
     object <- object[samp.name]
     tabl <- object@featFitting$sampleByComponent
+    tabl <- tabl / sum(tabl)
 
-    graphics::barplot(tabl,
-                      main = paste0("sample-by-component spectrum (",samp.name,")"),
-                      col = cols,
-                      xlab = "component",
-                      #names.arg=rep("",ncol(tabl)),
-                      ylab = paste0("Sum-of-posterior (",method,")"),
-                      axes=TRUE)
+    # graphics::barplot(tabl,
+    #                   main = paste0("sample-by-component spectrum (",samp.name,")"),
+    #                   col = cols,
+    #                   xlab = "component",
+    #                   #names.arg=rep("",ncol(tabl)),
+    #                   ylab = paste0("Sum-of-posterior (",method,")"),
+    #                   axes=TRUE)
+    component <- feature <- value <- NULL
+    tab <- as.data.frame(tabl) %>%
+        tibble::rownames_to_column(var = "component") %>%
+        dplyr::mutate(feature = gsub(pattern = "\\d+$",replacement = "",x = component)) %>%
+        dplyr::rename("value"="tabl") %>%
+        dplyr::mutate(component = factor(x = component,
+                                         levels = colnames(sxc))) %>%
+        dplyr::mutate(feature = factor(x = feature,
+                                       levels = stringr::str_sort(unique(n.feats),numeric = TRUE)))
+
+
+    ggplot2::ggplot(tab) +
+        ggplot2::geom_col(ggplot2::aes(component,value,fill=feature)) +
+        ggplot2::scale_fill_manual(values = featcols) +
+        ggplot2::scale_y_continuous(limits = c(0,1),expand = c(0,0)) +
+        ggplot2::ylab(paste0("weight (",method,")")) +
+        ggplot2::theme_bw() +
+        ggplot2::theme(legend.position = "bottom",
+                       axis.text.x = ggplot2::element_blank(),
+                       axis.ticks.x = ggplot2::element_blank(),
+                       axis.title.x = ggplot2::element_blank())
 }
