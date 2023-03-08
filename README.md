@@ -35,6 +35,16 @@ Input data is absolute copy number profiles in segment table format, containing 
 |2          |12784     |82571206    |2.0       |TCGA-BT-A20P|
 |3          |82571664  |85357333    |0.843     |TCGA-BT-A20P|
 
+Input data processing can have an impact on ability to robustly quantify copy number signatures across differing technologies. We describe best practises to limit these differences in the [supplemental methods (Drews et al. 2022)](https://static-content.springer.com/esm/art%3A10.1038%2Fs41586-022-04789-9/MediaObjects/41586_2022_4789_MOESM1_ESM.pdf) but the general recommendations are as follows:
+
+- SNP6 arrays: Recommended use with and without matched normals using ASCAT
+with a penalty of 70.
+- WGS: Recommended use with ASCAT focussing on SNP6 positions or ABSOLUTE
+on full WGS profiles.
+- Shallow WGS: Recommended use with ASCAT.sc and a penalty of 0.001
+- WES: For on-target reads, either ASCAT (penalty 70) or Sequenca can be used. For
+off-target reads, ASCAT.sc with penalty 0.001 is recommended.
+
 **Warning:** It is preferable use _unrounded_ copy number segments (floating point segVal states). _Rounded_ copy number states (integer segVal states) will work but outputs may not be directly comparable to _unrounded_ copy number outputs.
 
 ## Example data
