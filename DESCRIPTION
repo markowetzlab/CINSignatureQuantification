@@ -1,6 +1,6 @@
 Package: CINSignatureQuantification
 Title: Simple and quick measuring of copy number signatures in cancers
-Version: 1.1.1
+Version: 1.1.2
 Authors@R: 
     c(person(given = "Philip S",
            family = "Smith",
