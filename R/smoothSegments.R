@@ -1,6 +1,6 @@
 #' @importFrom data.table setDT
 ## Smooth segments that are close to
-smoothSegments = function(lRaw, CORES, SMOOTHINGFACTOR, colNameMerge, colNameChr, colNameStart, colNameEnd,
+smoothSegments = function(lRaw, CORES, WIGGLE, colNameMerge, colNameChr, colNameStart, colNameEnd,
                           IGNOREDELS = TRUE, asDf = FALSE) {
 
     ### Check column names
@@ -130,7 +130,7 @@ smoothSegments = function(lRaw, CORES, SMOOTHINGFACTOR, colNameMerge, colNameChr
                 # as we have replaced all segments with the new mean segment, we need to remove the duplicates
                 thisOut = thisOut[ ! duplicated(thisOut), ]
                 # again detect segments which needs smoothing
-                thisOut = idSmoothingTargets(thisOut, SMOOTHINGFACTOR, colNameSegVal = colNameMerge[[1]], colNameChr = colNameChr,
+                thisOut = idSmoothingTargets(thisOut, WIGGLE, colNameSegVal = colNameMerge[[1]], colNameChr = colNameChr,
                                              IGNOREDELS = IGNOREDELS)
                 stillSmoothing = sum(thisOut$smooth)
             }
