@@ -2,7 +2,7 @@ calculateActivityDrews = function(object,cancer.subset=NULL) {
 
     # Extract relevant information from object
     V = object@featFitting$sampleByComponent
-    nSamp = length(getSamples(object))
+    nSamp = nrow(object@featFitting$sampleByComponent)
     nFeat = ncol(object@featFitting$sampleByComponent)
 
     # Load signatures
