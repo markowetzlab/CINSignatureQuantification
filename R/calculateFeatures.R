@@ -31,12 +31,19 @@ setMethod("calculateFeatures",
                     smoothed = avoidMeasurementErrors(smoothed)
                     # Filter samples without CIN
                     filtered = removeQuietSamples(smoothed, DCIN = 20)
+                    if(nrow(filtered) == 0){
+                        warning("no samples with sufficient copy number alteration counts")
+                        methods::initialize(object,featData=list(),
+                                            ExpData = methods::initialize(object@ExpData,
+                                                                          last.modified = as.character(Sys.time()),
+                                                                          feature.method = method))
+                    } else {
                     # Extract
-                    featData = startCopynumberFeatureExtractionDrews(filtered, cores = cores, RMNORM = TRUE, build=object@ExpData@build)
-                    methods::initialize(object,featData=featData,
+                        featData = startCopynumberFeatureExtractionDrews(filtered, cores = cores, RMNORM = TRUE, build=object@ExpData@build)
+                        methods::initialize(object,featData=featData,
                                         ExpData = methods::initialize(object@ExpData,
                                                                       last.modified = as.character(Sys.time()),
                                                                       feature.method = method))
-
+                    }
                 })
           })

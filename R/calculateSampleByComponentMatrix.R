@@ -4,7 +4,7 @@ setMethod("calculateSampleByComponentMatrix",
           signature=c(object="CNQuant"),
           definition=function(object, method=NULL){
               if(length(object@featData) == 0){
-                  stop("Copy number features unavailable - run 'calculateFeatures()'")
+                  stop("Copy number features unavailable (run 'calculateFeatures()) or could not be calculated due to too few segments'")
               }
               if(is.null(method)){
                 method <- getExperiment(object)@feature.method
