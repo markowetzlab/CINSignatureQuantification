@@ -54,51 +54,9 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
             segTable <- data.table::fread(input = data,
                                           header = T)
             segTable <- segTable[,c("chromosome","start","end","segVal","sample")]
-            if(checkSegValRounding(segTable$segVal)){
-                warning("segVal appears to be rounded, copy number signatures
-                        were defined on unrounded absolute copy numbers, use
-                        caution when interpretting and comparing between rounded
-                        and unrounded inputs.")
-            }
-            ## Binned inputs (fixed width not supported yet)
-            # if(checkbinned(segTable)){
-            #     #segTable <- getSegTable()
-            #     #split(segTable,f = as.factor(segTable$sample))
-            # } else {
-            #     segTable <- split(segTable,f = as.factor(segTable$sample))
-            # }
-            ## Temp split until fixed bin input implemented
-            segTable$chromosome <- checkChromosomeFormat(segTable$chromosome)
-            segTable <- dropChromosomes(segTable)
-            segTable <- droplevels(segTable)
-            segTable <- split(segTable,f = as.factor(segTable$sample))
-
-            samplefeatData <- generateSampleFeatData(x = segTable)
-            methods::new("CNQuant",segments = segTable,samplefeatData = samplefeatData,
-                ExpData = methods::new("ExpQuant",
-                              build = build,
-                              samples.full = length(segTable),
-                              samples.current = length(segTable),
-                              experimentName = experimentName))
         }
     } else if("QDNAseqCopyNumbers" %in% class(data)){
         segTable <- getSegTable(x = data)
-        if(checkSegValRounding(segTable$segVal)){
-            warning("segVal appears to be rounded, copy number signatures were
-                    defined on unrounded absolute copy numbers, use caution when
-                    interpretting and comparing between rounded and unrounded inputs.")
-        }
-        segTable$chromosome <- checkChromosomeFormat(segTable$chromosome)
-        segTable <- dropChromosomes(segTable)
-        segTable <- droplevels(segTable)
-        segTable <- split(segTable,f = as.factor(segTable$sample))
-        samplefeatData <- generateSampleFeatData(x = segTable)
-        methods::new("CNQuant",segments = segTable,samplefeatData = samplefeatData,
-                     ExpData = methods::new("ExpQuant",
-                          build = build,
-                          samples.full = length(segTable),
-                          samples.current = length(segTable),
-                          experimentName = experimentName))
     } else if(is.data.frame(data)){
         header <- colnames(data)
         if(!all(header %in% c("chromosome","start","end","segVal","sample"))){
@@ -106,31 +64,34 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
         }
         segTable <- data
         segTable <- segTable[,c("chromosome","start","end","segVal","sample")]
-        if(checkSegValRounding(segTable$segVal)){
-            warning("segVal appears to be rounded, copy number signatures were
-                    defined on unrounded absolute copy numbers, use caution when
-                    interpretting and comparing between rounded and unrounded inputs.")
-        }
-        ## Binned inputs (fixed width not supported yet)
-        # if(checkbinned(segTable)){
-        #     #segTable <- getSegTable()
-        #     #split(segTable,f = as.factor(segTable$sample))
-        # } else {
-        #     segTable <- split(segTable,f = as.factor(segTable$sample))
-        # }
-        ## Temp split until fixed bin input implemented
-        segTable$chromosome <- checkChromosomeFormat(segTable$chromosome)
-        segTable <- dropChromosomes(segTable)
-        segTable <- droplevels(segTable)
-        segTable <- split(segTable,f = as.factor(segTable$sample))
-        samplefeatData <- generateSampleFeatData(x = segTable)
-        methods::new("CNQuant",segments=segTable,samplefeatData = samplefeatData,
-                     ExpData = methods::new("ExpQuant",
-                          build = build,
-                          samples.full = length(segTable),
-                          samples.current = length(segTable),
-                          experimentName = experimentName))
     } else {
         stop("Unknown input format\n")
     }
+    ## Binned inputs (fixed width not supported yet)
+    # if(checkbinned(segTable)){
+    #     #segTable <- getSegTable()
+    #     #split(segTable,f = as.factor(segTable$sample))
+    # } else {
+    #     segTable <- split(segTable,f = as.factor(segTable$sample))
+    # }
+    if(checkSegValRounding(segTable$segVal)){
+        warning("segVal appears to be rounded, copy number signatures
+                        were defined on unrounded absolute copy numbers, use
+                        caution when interpretting and comparing between rounded
+                        and unrounded inputs.")
+    }
+    ## Temp split until fixed bin input implemented
+    segTable <- checkInputTypes(segTable)
+    segTable$chromosome <- checkChromosomeFormat(segTable$chromosome)
+    segTable <- dropChromosomes(segTable)
+    segTable <- droplevels(segTable)
+    segTable <- split(segTable,f = as.factor(segTable$sample))
+    samplefeatData <- generateSampleFeatData(x = segTable)
+    methods::new("CNQuant",segments = segTable,samplefeatData = samplefeatData,
+                 ExpData = methods::new("ExpQuant",
+                                        build = build,
+                                        init.date = as.character(Sys.time()),
+                                        samples.full = length(segTable),
+                                        samples.current = length(segTable),
+                                        experimentName = experimentName))
 }
