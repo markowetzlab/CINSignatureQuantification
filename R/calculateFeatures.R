@@ -3,7 +3,7 @@
 #' @importFrom data.table rbindlist
 setMethod("calculateFeatures",
           signature=c(object="CNQuant"),
-          definition=function(object,method = NULL,smooth.diploid=TRUE,cores=1){
+          definition=function(object,method = NULL,smooth.diploid=TRUE,cores=1,DCIN = 20){
               methods <- c("mac","drews")
               if(is.null(method)){
                   stop("no method provided")
@@ -28,9 +28,20 @@ setMethod("calculateFeatures",
                                                       colNameChr = "chromosome",
                                                       IGNOREDELS = FALSE)
                     # Avoid measurement errors
-                    smoothed = avoidMeasurementErrors(smoothed)
+                    smoothed <- avoidMeasurementErrors(smoothed)
                     # Filter samples without CIN
-                    filtered = removeQuietSamples(smoothed, DCIN = 20)
+                    filtered <- removeQuietSamples(smoothed, DCIN = DCIN)
+
+                    kept <- ifelse(unique(smoothed$sample) %in% unique(filtered$sample),TRUE,FALSE)
+                    if(any(!kept)){
+                        message(cat("Low segment counts: Features not computed for",
+                                    length(unique(smoothed$sample)[!kept]),"of",
+                                    length(unique(smoothed$sample)),
+                                           "samples - see `getSampleFeatures()`"))
+                    }
+                    object <- addsampleFeatures(object = object,
+                                                sample.data = data.frame(sample=unique(smoothed$sample),
+                                                                         computeSigs=kept))
                     if(nrow(filtered) == 0){
                         warning("no samples with sufficient copy number alteration counts")
                         methods::initialize(object,featData=list(),

@@ -71,7 +71,7 @@ smoothSegments = function(lRaw, CORES, WIGGLE, colNameMerge, colNameChr, colName
                 # as we have replaced all segments with the new mean segment, we need to remove the duplicates
                 thisOut = thisOut[ ! duplicated(thisOut), ]
                 # again detect segments which needs smoothing
-                thisOut = idSmoothingTargets(thisOut, SMOOTHINGFACTOR, colNameSegVal = colNameMerge[[1]], colNameChr = colNameChr,
+                thisOut = idSmoothingTargets(thisOut, WIGGLE, colNameSegVal = colNameMerge[[1]], colNameChr = colNameChr,
                                              IGNOREDELS = IGNOREDELS)
                 stillSmoothing = sum(thisOut$smooth)
             }
