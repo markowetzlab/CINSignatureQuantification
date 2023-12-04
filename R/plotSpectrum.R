@@ -41,7 +41,7 @@ plotSpectrum <- function(object,sample=NULL,cols=NULL){
         stop("Unknow sample value provided; sample should be an integer index or name of sample contained within the provided object")
     }
 
-    samp <- getSamples(object = object)
+    samp <- rownames(object@featFitting$sampleByComponent)
     samp.len <- length(samp)
     if(is.numeric(sample)){
         if(sample > samp.len){
@@ -92,13 +92,6 @@ plotSpectrum <- function(object,sample=NULL,cols=NULL){
     tabl <- object@featFitting$sampleByComponent
     tabl <- tabl / sum(tabl)
 
-    # graphics::barplot(tabl,
-    #                   main = paste0("sample-by-component spectrum (",samp.name,")"),
-    #                   col = cols,
-    #                   xlab = "component",
-    #                   #names.arg=rep("",ncol(tabl)),
-    #                   ylab = paste0("Sum-of-posterior (",method,")"),
-    #                   axes=TRUE)
     component <- feature <- value <- NULL
     tab <- as.data.frame(tabl) %>%
         tibble::rownames_to_column(var = "component") %>%
@@ -113,7 +106,7 @@ plotSpectrum <- function(object,sample=NULL,cols=NULL){
     ggplot2::ggplot(tab) +
         ggplot2::geom_col(ggplot2::aes(component,value,fill=feature)) +
         ggplot2::scale_fill_manual(values = featcols) +
-        ggplot2::scale_y_continuous(limits = c(0,1),expand = c(0,0)) +
+        #ggplot2::scale_y_continuous(limits = c(0,NA),expand = c(0,0)) +
         ggplot2::ylab(paste0("weight (",method,")")) +
         ggplot2::theme_bw() +
         ggplot2::theme(legend.position = "bottom",
