@@ -20,11 +20,11 @@
 #' @seealso [getActivities()]
 #' @export plotActivities
 #'
-plotActivities <- function(object,type="threshold",cols=NULL){
+plotActivities <- function(object=NULL,type="threshold",cols=NULL){
     if(is.null(object)){
         stop("No object provided")
     }
-    if(!class(object) == "SigQuant"){
+    if(!inherits(x = object,what = "SigQuant",which = F)){
         stop("Object is not of class SigQuant")
     }
 

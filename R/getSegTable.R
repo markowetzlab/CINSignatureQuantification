@@ -1,5 +1,5 @@
 getSegTable<-function(x){
-    if(class(x)=="QDNAseqCopyNumbers"){
+    if(inherits(x,what = "QDNAseqCopyNumbers",which = F)){
         sn<-Biobase::assayDataElement(x,"segmented")
         fd <- Biobase::fData(x)
         fd$use -> use

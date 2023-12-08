@@ -4,7 +4,7 @@
 \alias{addsampleFeatures}
 \title{addsampleFeatures}
 \usage{
-addsampleFeatures(object, sample.data = NULL, id.col = "sample")
+addsampleFeatures(object = NULL, sample.data = NULL, id.col = "sample")
 }
 \arguments{
 \item{object}{CNQuant or SigQuant class object}

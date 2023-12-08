@@ -178,3 +178,51 @@ NULL
 #' @usage data(test.sample.features)
 #' @format A data.frame with 4 columns and 478 rows.
 NULL
+
+#' CNobj.drews
+#'
+#' Example CNQuant class object containing ten pre-computed samples using the
+#' "drews" copy number signature methodology.
+#'
+#' @docType data
+#' @keywords datasets
+#' @name CNobj.drews
+#' @usage data(CNobj.drews)
+#' @format A CNQuant class object using the "drews" methodology
+NULL
+
+#' SIGobj.drews
+#'
+#' Example SigQuant class object containing ten pre-computed samples using the
+#' "drews" copy number signature methodology.
+#'
+#' @docType data
+#' @keywords datasets
+#' @name SIGobj.drews
+#' @usage data(SIGobj.drews)
+#' @format A CNQuant class object using the "drews" methodology
+NULL
+
+#' CNobj.mac
+#'
+#' Example CNQuant class object containing ten pre-computed samples using the
+#' "mac" copy number signature methodology.
+#'
+#' @docType data
+#' @keywords datasets
+#' @name CNobj.mac
+#' @usage data(CNobj.mac)
+#' @format A CNQuant class object using the "mac" methodology
+NULL
+
+#' SIGobj.mac
+#'
+#' Example SigQuant class object containing ten pre-computed samples using the
+#' "mac" copy number signature methodology.
+#'
+#' @docType data
+#' @keywords datasets
+#' @name SIGobj.mac
+#' @usage data(SIGobj.mac)
+#' @format A CNQuant class object using the "mac" methodology
+NULL

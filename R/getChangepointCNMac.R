@@ -3,15 +3,17 @@ getChangepointCNMac<-function(abs_profiles){
     samps<-names(abs_profiles)
     for(i in samps)
     {
-        if(class(abs_profiles)=="QDNAseqCopyNumbers")
-        {
-            segTab<-getSegTable(abs_profiles[,which(colnames(abs_profiles)==i)])
-        }
-        else
-        {
-            segTab<-abs_profiles[[i]]
-            colnames(segTab)[4]<-"segVal"
-        }
+        # Data is pre-processed prior so should never be a QDNAseqCopyNumbers
+        # when calling this function.
+        # if(class(abs_profiles)=="QDNAseqCopyNumbers")
+        # {
+        #     segTab<-getSegTable(abs_profiles[,which(colnames(abs_profiles)==i)])
+        # }
+        # else
+        # {
+        segTab<-abs_profiles[[i]]
+        colnames(segTab)[4]<-"segVal"
+        #}
         segTab$segVal[as.numeric(segTab$segVal)<0]<-0
         chrs<-unique(segTab$chromosome)
         allcp<-c()

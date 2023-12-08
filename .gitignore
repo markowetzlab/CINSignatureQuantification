@@ -6,3 +6,4 @@ inst/4_*
 /doc/
 /Meta/
 inst/doc
+tests/testthat/Rplots.pdf

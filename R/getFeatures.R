@@ -1,7 +1,7 @@
 #' @rdname getFeatures-methods
 #' @aliases getFeatures
 setMethod("getFeatures",signature = "CNQuant",function(object,feat=NULL){
-    if(is.null(object@featData)){
+    if(length(object@featData) < 1){
         stop("no feature data available. Run `quantifyCNSignatures()` or
              `calculateFeatures()`")
     }

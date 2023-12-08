@@ -154,6 +154,10 @@ setGeneric("getFeatures", function(object,feat=NULL) standardGeneric("getFeature
 #' @param cores Number of CPU threads/cores to utilise via doParallel. Default
 #'   is 1. Maximum number is equal to the number of features to extract (drews &
 #'   mac methods = 6 features).
+#' @param DCIN Threshold for required number of non-diploid segments to compute
+#'   copy number features (and subsequently copy number signatures) using method
+#'   "drews". Default is 20. This parameter should not need to be changed and
+#'   will affect feature values and signature activity.
 #' @return A CNQuant class object with extracted features stored in the
 #'   "featData" slot
 #' @examples
@@ -165,7 +169,7 @@ setGeneric("getFeatures", function(object,feat=NULL) standardGeneric("getFeature
 #' @docType methods
 #' @rdname calculateFeatures-methods
 #'
-setGeneric("calculateFeatures",function(object, method="drews",smooth.diploid=TRUE,cores=1)
+setGeneric("calculateFeatures",function(object, method="drews",smooth.diploid=TRUE,cores=1,DCIN = 20)
     standardGeneric("calculateFeatures"))
 
 #' calculateSampleByComponentMatrix
