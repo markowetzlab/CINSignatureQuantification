@@ -3,7 +3,7 @@ checkInputTypes <- function(x=NULL){
     if(is.null(x)){
         stop("no table")
     }
-    x$chromsome <- as.character(x$chromosome)
+    x$chromosome <- as.character(x$chromosome)
     x$start <- as.numeric(x$start)
     x$end <- as.numeric(x$end)
     x$segVal <- as.numeric(x$segVal)
