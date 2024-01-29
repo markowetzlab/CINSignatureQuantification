@@ -355,3 +355,27 @@ setGeneric("clinPredictionPlatinum",function(object)
 #'
 setGeneric("clinPredictionDenovo",function(object, sampTrain, sigsTrain)
     standardGeneric("clinPredictionDenovo"))
+
+
+#' exportCIN
+#'
+#' This function exports data from a `CNQuant` or `SigQuant` class object.
+#'
+#' @param object CNQuant or SigQuant object
+#' @param outputDir Output location provided as a writable file directory. This
+#'   defaults to the current working directory.
+#' @param outputPrefix A prefix added to the beginning of exported files.
+#' @param sep Default file seperator used in writing files (Default: '\t')
+#' @param fullExport Provide a full export of all data contained within the
+#'   provided object, including reference data, feature values, models, and
+#'   supporting information (default: FALSE).
+#'
+#' @return NULL
+#' @examples
+#' @export
+#'
+#' @docType methods
+#' @rdname exportCIN-methods
+#'
+setGeneric("exportCIN",function(object,outputDir=NULL,outputPrefix=NULL,sep="\t",fullExport=FALSE)
+    standardGeneric("exportCIN"))
