@@ -148,7 +148,7 @@ setGeneric("getFeatures", function(object,feat=NULL) standardGeneric("getFeature
 #' `featData` slot in the returned `CNQuant` class object.
 #'
 #' @param object CNQuant object
-#' @param method Method to extract copy number features. Default is "drews".
+#' @param method Method to extract copy number features.
 #' @param smooth.diploid Binary variable indicating whether segments close to 2
 #'   should be collapsed to 2 and merged together. Default is TRUE.
 #' @param cores Number of CPU threads/cores to utilise via doParallel. Default
@@ -169,7 +169,7 @@ setGeneric("getFeatures", function(object,feat=NULL) standardGeneric("getFeature
 #' @docType methods
 #' @rdname calculateFeatures-methods
 #'
-setGeneric("calculateFeatures",function(object, method="drews",smooth.diploid=TRUE,cores=1,DCIN = 20)
+setGeneric("calculateFeatures",function(object, method=NULL,smooth.diploid=TRUE,cores=1,DCIN = 20)
     standardGeneric("calculateFeatures"))
 
 #' calculateSampleByComponentMatrix

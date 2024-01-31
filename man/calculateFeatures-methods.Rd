@@ -8,7 +8,7 @@
 \usage{
 calculateFeatures(
   object,
-  method = "drews",
+  method = NULL,
   smooth.diploid = TRUE,
   cores = 1,
   DCIN = 20
