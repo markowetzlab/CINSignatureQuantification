@@ -365,7 +365,9 @@ setGeneric("clinPredictionDenovo",function(object, sampTrain, sigsTrain)
 #' @param outputDir Output location provided as a writable file directory. This
 #'   defaults to the current working directory.
 #' @param outputPrefix A prefix added to the beginning of exported files.
-#' @param sep Default file seperator used in writing files (Default: '\t')
+#' @param includeExpName Include the object experiment name in the file name
+#'   (default: FALSE).
+#' @param sep Default file separator used in writing files (Default: '\\t')
 #' @param fullExport Provide a full export of all data contained within the
 #'   provided object, including reference data, feature values, models, and
 #'   supporting information (default: FALSE).
@@ -377,5 +379,6 @@ setGeneric("clinPredictionDenovo",function(object, sampTrain, sigsTrain)
 #' @docType methods
 #' @rdname exportCIN-methods
 #'
-setGeneric("exportCIN",function(object,outputDir=NULL,outputPrefix=NULL,sep="\t",fullExport=FALSE)
+setGeneric("exportCIN",function(object,outputDir=NULL,outputPrefix=NULL,
+                                includeExpName=FALSE,sep="\t",fullExport=FALSE)
     standardGeneric("exportCIN"))

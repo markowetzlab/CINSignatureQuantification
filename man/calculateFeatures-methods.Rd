@@ -25,7 +25,7 @@ calculateFeatures(
 \arguments{
 \item{object}{CNQuant object}
 
-\item{method}{Method to extract copy number features. Default is "drews".}
+\item{method}{Method to extract copy number features.}
 
 \item{smooth.diploid}{Binary variable indicating whether segments close to 2
 should be collapsed to 2 and merged together. Default is TRUE.}
