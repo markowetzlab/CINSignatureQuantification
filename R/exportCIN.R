@@ -1,11 +1,28 @@
-#' @rdname exportCIN-methods
-#' @aliases exportCIN
-setMethod("exportCIN",signature = "CNQuant",function(object,outputDir=NULL,
-                                                     outputPrefix=NULL,
-                                                     includeExpName=FALSE,
-                                                     sep="\t",
-                                                     fullExport=FALSE){
-    cat("export stuff\n")
+#' exportCIN
+#'
+#' This function exports data from a `CNQuant` or `SigQuant` class object.
+#'
+#' @param object CNQuant or SigQuant object
+#' @param outputDir Output location provided as a writable file directory. This
+#'   defaults to the current working directory.
+#' @param outputPrefix A prefix added to the beginning of exported files.
+#' @param includeExpName Include the object experiment name in the file name
+#'   (default: FALSE).
+#' @param sep Default file separator used in writing files (Default: '\\t')
+#' @param fullExport Provide a full export of all data contained within the
+#'   provided object, including reference data, feature values, models, and
+#'   supporting information (default: FALSE).
+#'
+#' @return NULL
+#' @export
+
+exportCIN <- function(object,outputDir=NULL,outputPrefix=NULL,
+                      includeExpName=FALSE,sep="\t",fullExport=FALSE){
+
+    if(!any(methods::is(object) %in% c("CNQuant","SigQuant"))) {
+        stop("input should be a CNQuant or SigQuant class object")
+    }
+
     ## Check outputDir
     if(!is.null(outputDir)){
         if(!dir.exists(outputDir)){
@@ -38,35 +55,67 @@ setMethod("exportCIN",signature = "CNQuant",function(object,outputDir=NULL,
         suffix <- ".txt"
     }
 
+    ## Include/exclude exp name
     if(includeExpName){
         expname <- object@ExpData@experimentName
     } else {
         expname <- ""
     }
 
-    if(inherits(object,what = "CNQuant")){
-        cat("export segments...\n")
-        writeData(table = getSegments(object),
-                  file = fileNamer(outputDir,outputPrefix,expname,
-                                   fileName="cn_segments",suffix),sep = sep)
-        if(length(object@featData) > 0){
-            cat("export features...\n")
-            writeData(table = collapseFeats(getFeatures(object)),
-                      file = fileNamer(outputDir,outputPrefix,expname,
-                                       fileName="cn_features",suffix),sep = sep)
-        }
+    ## Set method name
+    if(is.null(object@featFitting$method)){
+        methodname <- ""
+    } else {
+        methodname <- object@featFitting$method
+    }
+
+    ## Save RDS
+    rds.name <- fileNamer(outputDir,outputPrefix,expname,
+                          methodname,fileName="CINQuantObj",
+                          suffix=".rds")
+    saveRDS(object = object,file = rds.name)
+
+    ## Export segs
+    writeData(table = getSegments(object),
+        file = fileNamer(outputDir,outputPrefix,expname,methodname,
+            fileName="cn_segments",suffix),
+        sep = sep)
+
+    writeData(table = rownamesToCol(getSamplefeatures(object)),
+        file = fileNamer(outputDir,outputPrefix,expname,methodname,
+            fileName="sample_info",suffix),
+        sep = sep)
+
+    ## Check and export features
+    if(length(object@featData) > 0){
+        writeData(table = exportFeats(getFeatures(object)),
+            file = fileNamer(outputDir,outputPrefix,expname,methodname,
+            fileName="cn_features",suffix),
+            sep = sep)
+    }
+
+    if(length(object@featFitting) > 0){
+        writeData(table = rownamesToCol(getSampleByComponent(object)),
+            file = fileNamer(outputDir,outputPrefix,expname,methodname,
+                fileName="cn_sampleByComponent",suffix),
+            sep = sep)
     }
 
     ## check SigQuant class
-    if(inherits(object,what = "SigQuant")){
-
+    if(methods::is(object,"SigQuant")){
+        writeData(table = rownamesToCol(getActivities(object)),
+                  file = fileNamer(outputDir,outputPrefix,expname,methodname,
+                                   fileName="sig_activities",suffix),
+                  sep = sep)
     }
 
     if(fullExport){
-        cat("full export")
+        cat("full export does nothing")
     }
-})
+    cat(paste0("CIN data written to ",outputDir))
+}
 
+# Support function to write tabular files to disk
 writeData <- function(table=NULL,file=NULL,sep="\t"){
     if(is.null(table)){
         stop("no data")
@@ -75,23 +124,16 @@ writeData <- function(table=NULL,file=NULL,sep="\t"){
         stop("no file path")
     }
 
-    print(file)
-
-    # data.table::fwrite(x = table,file = file,
-    #                    append = FALSE,quote = FALSE,sep = sep,row.names = FALSE,
-    #                    col.names = TRUE,na = NA)
+    data.table::fwrite(x = table,file = file,
+                       append = FALSE,quote = FALSE,sep = sep,
+                       row.names = FALSE,col.names = TRUE,na = NA)
 }
 
-fileNamer <- function(outputDir,outputPrefix,expname,fileName,suffix){
-    if(outputPrefix != "" & expname != ""){
-        outfile <- paste(outputPrefix,expname,fileName,sep = "_")
-    } else if(outputPrefix != "" & expname == ""){
-        outfile <- paste(outputPrefix,fileName,sep = "_")
-    } else if(outputPrefix == "" & expname != ""){
-        outfile <- paste(expname,fileName,sep = "_")
-    } else if(outputPrefix == "" & expname == ""){
-        outfile <- fileName
-    }
+# Support function to name files
+fileNamer <- function(outputDir,outputPrefix,expname,methodname,fileName,suffix){
+    outfile <- paste(Sys.Date(),outputPrefix,expname,methodname,fileName,sep = "_")
+    outfile <- gsub(pattern = "__+",replacement = "_",x = outfile)
+    outfile <- gsub(pattern = "^_",replacement = "",x = outfile)
 
     outputDir <- gsub(pattern = "//+",replacement = "/",paste0(outputDir,"/"))
 
@@ -99,7 +141,8 @@ fileNamer <- function(outputDir,outputPrefix,expname,fileName,suffix){
     return(filePath)
 }
 
-collapseFeats <- function(x){
+# Converts CN feat list to tabular format
+exportFeats <- function(x){
     ftab <- do.call(rbind,lapply(names(x)[1],FUN = function(y){
         feat <- x[[y]]
         feat$feature <- rep(y,times=nrow(feat))
@@ -109,3 +152,12 @@ collapseFeats <- function(x){
     return(ftab)
 }
 
+# Retains rownames from matrix outputs for export to tabular format
+rownamesToCol <- function(x) {
+    x <- as.data.frame(x)
+    rn <- rownames(x)
+    rownames(x) <- NULL
+    y <- cbind(rn,x)
+    colnames(y) <- c("sample",colnames(x))
+    return(y)
+}
