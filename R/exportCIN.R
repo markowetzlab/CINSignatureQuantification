@@ -110,7 +110,7 @@ exportCIN <- function(object,outputDir=NULL,outputPrefix=NULL,
     }
 
     if(fullExport){
-        cat("full export does nothing")
+        cat("full export does nothing currently\n")
     }
     cat(paste0("CIN data written to ",outputDir))
 }
