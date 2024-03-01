@@ -14,15 +14,23 @@ setMethod("show", signature=c(object="SigQuant"),
               if(length(object@featFitting) == 0){
                   cat("\n\tno data\n")
               } else {
-                  cat("\n\tsampleByComponent dim: ",dim(object@featFitting$sampleByComponent)[1]," x ",dim(object@featFitting$sampleByComponent)[2],"\n",sep = "")
-                  cat("\tfitting method: ",object@featFitting$method,"\n",sep = "")
+                if(length(dim(object@featFitting$sampleByComponent)) == 0){
+                    cat("\n\tsampleByComponent dim: ",1," x ",length(object@featFitting$sampleByComponent),"\n",sep = "")
+                } else {
+                    cat("\n\tsampleByComponent dim: ",dim(object@featFitting$sampleByComponent)[1]," x ",dim(object@featFitting$sampleByComponent)[2],"\n",sep = "")
+                }
+                cat("\tfitting method: ",object@featFitting$method,"\n",sep = "")
               }
               cat("Sample feature data:\n")
               cat("\tdim: ",dim(object@samplefeatData)[1]," x ",dim(object@samplefeatData)[2],"\n",sep = "")
               cat("\tfeatures: ",paste0(colnames(object@samplefeatData),collapse=","),"\n",sep = "")
 
               cat("Signature activities:\n")
-              cat("\tdim: ",dim(object@activities$rawAct0)[1]," x ",dim(object@activities$rawAct0)[2],"\n",sep = "")
+              if(length(dim(object@activities$rawAct0)) == 0){
+                  cat("\tdim: ",1," x ",length(object@activities$rawAct0),"\n",sep = "")
+              } else {
+                  cat("\tdim: ",dim(object@activities$rawAct0)[1]," x ",dim(object@activities$rawAct0)[2],"\n",sep = "")
+              }
               cat("\tsignature model: ",paste0(object@signature.model),"\n",sep = "")
 
               cat("Experiment:\n")
