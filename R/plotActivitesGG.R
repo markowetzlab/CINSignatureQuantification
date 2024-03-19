@@ -103,7 +103,8 @@ plotActivitiesGG <- function(object,type="threshold",cols=NULL){
                     dplyr::mutate(sample = factor(x = sample,levels = unique(sample)))
 
     sigPlot <- ggplot2::ggplot(plotdata) +
-                ggplot2::geom_col(ggplot2::aes(x = sample,y = activity,fill=signature)) +
+                ggplot2::geom_col(ggplot2::aes(x = sample,y = activity,fill=signature),
+                                  position = ggplot2::position_fill(reverse = TRUE),color="grey20") +
                 ggplot2::scale_fill_manual(values = cols) +
                 ggplot2::scale_y_continuous(expand = c(0,0)) +
                 ggplot2::scale_x_discrete(expand = c(0,1)) +
