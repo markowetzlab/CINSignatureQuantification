@@ -28,6 +28,12 @@ getOscillationMac<-function(abs_profiles,chrlen){
                     if(currseg[j]==prevval&currseg[j]!=currseg[j-1])
                     {
                         count<-count+1
+                        # # suggested fix for end of chromsome chain counts
+                        # # https://github.com/markowetzlab/CINSignatureQuantification/issues/22
+                        # if (j == length(currseg)) {
+                        #     oscCounts = c(oscCounts, count)
+                        #     count = 0
+                        # }
                     }else{
                         oscCounts<-c(oscCounts,count)
                         count=0
