@@ -31,19 +31,17 @@ standardised input slots for downstream processing.
 rounded) copy number data which can be provided in various formats. In the
 first instance, copy number data can be a delimited file containing segment
 data for all samples with the following fields;
-"chromosome","start","end","segVal" & "sample". This should be specified as
-a file path. Secondly, data can be loaded as a data.frame object with the
-same fields specified previously and provided as the input data. Lastly, a
-\code{QDNAseqCopyNumbers} class object from the \href{https://github.com/ccagc/QDNAseq}{QDNAseq package} can be used as an input file,
-from which a segment table is extracted.
-\itemize{
+"chromosome","start","end","segVal" & "sample". This should be specified as a
+file path. Secondly, data can be loaded as a data.frame object with the same
+fields specified previously and provided as the input data. Lastly, a
+\code{QDNAseqCopyNumbers} class object from the \href{https://github.com/ccagc/QDNAseq}{QDNAseq package} can be used as an input file, from
+which a segment table is extracted.
 \item experimentName: experimentName can be a character string to name the
-\code{CNQuant} class object for future reference. It currently has no usage in
-any functions.
+\code{CNQuant} class object for future reference. It currently has no usage in any
+functions.
 \item build: character string to specify the genome build to use when extracting
-copy number features. Only human data using either hg19 or hg38 is
-currently supported.
-}
+copy number features. Only human data using either hg19 or hg38 is currently
+supported.
 }
 }
 \examples{

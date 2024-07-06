@@ -7,22 +7,23 @@
 #' @param data Unrounded absolute copy number data
 #' @param experimentName A user-specified name of the experiment
 #' @param build Genome build to use, either hg19 or hg38 (default: hg19)
-#' @details * data: Input data for this function should be unrounded (or
-#'   rounded) copy number data which can be provided in various formats. In the
-#'   first instance, copy number data can be a delimited file containing segment
-#'   data for all samples with the following fields;
-#'   "chromosome","start","end","segVal" & "sample". This should be specified as
-#'   a file path. Secondly, data can be loaded as a data.frame object with the
-#'   same fields specified previously and provided as the input data. Lastly, a
-#'   `QDNAseqCopyNumbers` class object from the [QDNAseq
-#'   package](https://github.com/ccagc/QDNAseq) can be used as an input file,
-#'   from which a segment table is extracted.
+#' @details
+#'   * data: Input data for this function should be unrounded (or
+#' rounded) copy number data which can be provided in various formats. In the
+#' first instance, copy number data can be a delimited file containing segment
+#' data for all samples with the following fields;
+#' "chromosome","start","end","segVal" & "sample". This should be specified as a
+#' file path. Secondly, data can be loaded as a data.frame object with the same
+#' fields specified previously and provided as the input data. Lastly, a
+#' `QDNAseqCopyNumbers` class object from the [QDNAseq
+#' package](https://github.com/ccagc/QDNAseq) can be used as an input file, from
+#' which a segment table is extracted.
 #'   * experimentName: experimentName can be a character string to name the
-#'   `CNQuant` class object for future reference. It currently has no usage in
-#'   any functions.
+#' `CNQuant` class object for future reference. It currently has no usage in any
+#' functions.
 #'   * build: character string to specify the genome build to use when extracting
-#'    copy number features. Only human data using either hg19 or hg38 is
-#'    currently supported.
+#' copy number features. Only human data using either hg19 or hg38 is currently
+#' supported.
 #' @return A CNQuant class object
 #' @seealso [CNQuant-class]
 #' @seealso [quantifyCNSignatures()]
