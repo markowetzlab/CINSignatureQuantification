@@ -139,3 +139,9 @@ ggplot(chain_density[chain_density$value < 10,]) +
 qDiff <- getActivities(q_Fix) - getActivities(q_noFix)
 barplot(colMeans(qDiff))
 barplot(colMeans(qDiff) / colMeans(getActivities(q_noFix)))
+
+
+### OLD PAN CANCER osCN mixture modelling
+
+# 23_Fit_MixtureModels.R
+ositer <- readRDS("CIN_Compendium_Discovery/3_Pancancer_Signatures/1_tcga_filtered_ecnf.rds")
