@@ -1,5 +1,7 @@
 # test os chain bug
 ## https://github.com/markowetzlab/CINSignatureQuantification/issues/22
+library(ggplot2)
+library(CINSignatureQuantification)
 
 segTab_internal_chains <- data.frame(chromosome=c(rep("chr1",times=7),rep("chr2",times=7)),
                  start=rep(c(1,100,200,300,400,500,600),times=2),
@@ -141,7 +143,49 @@ barplot(colMeans(qDiff))
 barplot(colMeans(qDiff) / colMeans(getActivities(q_noFix)))
 
 
-### OLD PAN CANCER osCN mixture modelling
+### OLD vs NEW PAN CANCER osCN mixture modelling
+# Read CN segment data after filtering, smoothing etc.
+library(CINSignatureQuantification)
+# Do a load_all(CINSignatureQuantification)
+segs <- readRDS("0_TCGA_Segments_dCIN.rds")
+segs <- split(segs,f = segs$sample)
+length(segs)
 
-# 23_Fit_MixtureModels.R
-ositer <- readRDS("CIN_Compendium_Discovery/3_Pancancer_Signatures/1_tcga_filtered_ecnf.rds")
+# Load existing feats computed for publication
+existingFeats <- readRDS("1_tcga_filtered_ecnf.rds")
+dim(existingFeats$osCN)
+
+## Original drews function to compute osCN using package functions
+osCN_nofix <- getOscillationDrews(segs)
+dim(osCN_nofix)
+# New versions of old osCN match publication version of features using 6335 curated samples
+all(existingFeats$osCN == osCN_nofix)
+
+## fixed osCN drews function with fix to compute osCN using package functions
+osCN_fix <- getOscillationDrewsV2(segs)
+dim(osCN_fix)
+
+## Implementation of 23_Fit_MixtureModels.R condensed functions to run as single line
+# Original osCN from paper
+osCN_original_pub_mixtureModel <- Drews2022_TCGA_Mixture_Models$osCN
+# Run Poisson mixture using same publication parameters 100 times and use modal k and BIC
+# Original osCN feat refit
+if(!file.exists("osCN_noFix_mixtureModel_refitted.rds")){
+    osCN_noFix_mixtureModel <- fitMixturePois(osCN_nofix,seed = NULL,iters = 100,max_comp = 5,cores = 11)
+    saveRDS(osCN_noFix_mixtureModel,file = "osCN_noFix_mixtureModel_refitted.rds")
+} else {
+    osCN_noFix_mixtureModel <- readRDS("osCN_noFix_mixtureModel_refitted.rds")
+}
+# New fixed osCN feat
+if(!file.exists("osCN_Fix_mixtureModel_newlyfitted.rds")){
+    osCN_Fix_mixtureModel <- fitMixturePois(osCN_fix,seed = NULL,iters = 100,max_comp = 5,cores = 11)
+    saveRDS(osCN_Fix_mixtureModel,file = "osCN_Fix_mixtureModel_newlyfitted.rds")
+} else {
+    osCN_noFix_mixtureModel <- readRDS("osCN_Fix_mixtureModel_newlyfitted.rds")
+}
+
+## extract mean and prior for both models
+osCN_noFix_mixtureModel_weights <- formatPoisModel(osCN_noFix_mixtureModel$model)
+osCN_Fix_mixtureModel_weights <- formatPoisModel(osCN_Fix_mixtureModel$model)
+
+saveRDS(list(osCN_noFix_mixtureModel,osCN_noFix_mixtureModel_weights,osCN_Fix_mixtureModel,osCN_Fix_mixtureModel_weights,osCN_original_pub_mixtureModel),file = "osCN_oldrefittedVsnew_mixtures.rds")

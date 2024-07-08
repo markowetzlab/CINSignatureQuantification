@@ -22,9 +22,11 @@
 #'   fitting. The modal value for number of components is selected from the
 #'   total number of iterations and the model with the best model selection
 #'   value returned (Default: 1)
+#' @param cores Number of cores to use when iterating (default: 1)
 #' @returns data.table containing the mean and weights of fitted poisson mixture
 #'   models
-fitMixturePois <- function(component=NULL,seed=NULL,model_selection="BIC",min_prior=0.001,niter=1000,nrep=1,min_comp=2,max_comp=10,iters=1){
+#' @export
+fitMixturePois <- function(component=NULL,seed=NULL,model_selection="BIC",min_prior=0.001,niter=1000,nrep=1,min_comp=2,max_comp=10,iters=1,cores=1){
     if(!requireNamespace("flexmix", quietly = TRUE)){
         stop("package 'flexmix' is not installed and is required to fit mixture models")
     }
@@ -34,7 +36,11 @@ fitMixturePois <- function(component=NULL,seed=NULL,model_selection="BIC",min_pr
     if(!is.null(seed)){
         set.seed(seed)
     }
-
+    if(min_comp >= max_comp){
+        stop("minimum number of components should be less than maximum")
+    }
+    # capture args
+    argg <- unlist(c(as.list(environment()))[-1])
     # set the column names to fix bpchrarm naming
     colnames(component) <- c("ID","value")
 
@@ -42,8 +48,9 @@ fitMixturePois <- function(component=NULL,seed=NULL,model_selection="BIC",min_pr
 
     model <- fitPoisModel(component = component$value,min_comp = min_comp,
                           max_comp = max_comp,nrep = nrep, control = control,
-                          model_selection = model_selection,iters=iters)
-    return(model)
+                          model_selection = model_selection,iters=iters,cores=cores)
+    modelArg <- append(model,argg)
+    return(modelArg)
 }
 
 generateControl <- function(min_prior,niter){
@@ -53,28 +60,45 @@ generateControl <- function(min_prior,niter){
     return(control)
 }
 
-fitPoisModel <- function(component,min_comp,max_comp,nrep,control,model_selection,iters){
+fitPoisModel <- function(component,min_comp,max_comp,nrep,control,model_selection,iters,cores){
     fitPoismessage <- paste0("fitting poisson mixture models")
     message(fitPoismessage)
     if(iters == 1){
-        fit <- flexmix::stepFlexmix(component ~ 1,verbose = T,
+        fit <- flexmix::stepFlexmix(component ~ 1,verbose = F,
                                 model = flexmix::FLXMCmvpois(),
                                 k=min_comp:max_comp,nrep=nrep,control=control)
         fit <- flexmix::getModel(fit,which=model_selection)
+        fit <- list(model=fit,iterk=fit@k,k=fit@k)
     } else {
-        iterlist <- list()
-        for(i in 1:iters){
-            message(paste0("Iteration ",i," of ",iters))
-            ifit <- flexmix::stepFlexmix(component ~ 1,verbose = T,
-                                    model = flexmix::FLXMCmvpois(),
-                                    k=min_comp:max_comp,nrep=nrep,control=control)
+        if(cores == 1){
+            iterlist <- list()
+            for(i in 1:iters){
+                message(paste0("Iteration ",i," of ",iters))
+                ifit <- flexmix::stepFlexmix(component ~ 1,verbose = T,
+                                        model = flexmix::FLXMCmvpois(),
+                                        k=min_comp:max_comp,nrep=nrep,control=control)
 
-            ifit <- flexmix::getModel(ifit,which=model_selection)
-            iterlist <- append(iterlist,list(ifit))
+                ifit <- flexmix::getModel(ifit,which=model_selection)
+                iterlist <- append(iterlist,list(ifit))
+            }
+        } else {
+            message(paste0("Running iterations across ",cores," threads/cores"))
+            `%dopar%` <- foreach::`%dopar%`
+            doParallel::registerDoParallel(cores)
+            i <- NULL
+            iterlist = foreach::foreach(i=1:iters,.verbose = T) %dopar% {
+                ifit <- flexmix::stepFlexmix(component ~ 1,verbose = T,
+                                             model = flexmix::FLXMCmvpois(),
+                                             k=min_comp:max_comp,nrep=nrep,control=control)
+
+                ifit <- flexmix::getModel(ifit,which=model_selection)
+            }
+            doParallel::stopImplicitCluster()
         }
         fit <- getBestModel(iterlist,model_selection=model_selection)
     }
     return(fit)
+    #return(iterlist)
 }
 
 formatPoisModel <- function(model){
@@ -89,11 +113,13 @@ formatPoisModel <- function(model){
 
 getBestModel <- function(models,model_selection){
     modeV <- unlist(lapply(models,FUN = function(y) y@k))
-    mixtureMode <- getModalValue(modeV)
-    message(paste0("Modal k: ",mixtureMode))
+    print(table(modeV))
+    mixtureMode <- collapse::fmode(modeV)
+    message(paste0("Selecting modal k = ",mixtureMode))
     models <- models[which(modeV == mixtureMode)]
     bestSolutionMAX <- Inf
     bestmodel <- NA
+    message(paste0("Picking best model based on ",model_selection,"..."))
     for(model in models) {
         switch(model_selection,
                BIC={
@@ -106,15 +132,12 @@ getBestModel <- function(models,model_selection){
                    IC = abs(ICL(model))
                })
         if(IC < bestSolutionMAX) {
-            message(paste0("Current best IC: ",bestSolutionMAX))
+            message(paste0("...Current best IC: ",bestSolutionMAX))
             bestSolutionMAX = IC
             bestmodel = model
         }
     }
-    return(bestmodel)
+    #message(paste0("best model based on ",model_selection," - ",bestSolutionMAX))
+    return(list(model=bestmodel,iterk=modeV,k=mixtureMode))
 }
 
-getModalValue <- function(x){
-    m <- as.numeric(names(sort(table(x))[1]))
-    return(m)
-}
