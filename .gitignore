@@ -9,4 +9,5 @@ inst/doc
 tests/testthat/Rplots.pdf
 *.rds
 cnsignatures_osCN_refit/0_TCGA_Segments_dCIN.txt
-*CxS.txt
+*CxS.tsv
+*.pyc
