@@ -1,0 +1,474 @@
+---
+title: "osCN-chain-count"
+author: "Philip Smith"
+date: "`r Sys.Date()`"
+output: html_document
+---
+# os chain count
+- https://github.com/markowetzlab/CINSignatureQuantification/issues/22
+
+Issue opened on `CINSignatureQuantification` package identified a potential issue with the `osCN` chain length feature function in which chains where the last "link" of a chain coincided with the terminus of a chromosome were not included in the final feature count vector.
+
+## set up
+
+```{r libs}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(tibble)
+library(CINSignatureQuantification) # install getOS-count branch of packaged
+```
+
+```{r testOCfunc}
+# Extracted version of core component of osCN function with togglable fix
+# Loop over chromosomes to identify oscillation
+testOC <- function(segTab,usefix=FALSE){
+
+    samps = unique(segTab$sample)
+    chrs = unique(segTab$chromosome)
+    oscCounts = c()
+    for(i in samps) {
+
+        # Retrieve segments
+        #segTab = abs_profiles[[i]]
+        colnames(segTab)[4] = "segVal"
+
+        # Loop over chromosomes to identify oscillation
+        chrs = unique(segTab$chromosome)
+        oscCounts = c()
+        for(c in chrs) {
+
+            currseg = as.numeric(segTab$segVal[segTab$chromosome == c])
+            currseg = round(as.numeric(currseg))
+
+            # Only take chains into consideration with a length of more than 3 elements
+            if(length(currseg)>3) {
+                prevval = currseg[1]
+                count = 0
+                for(j in 3:length(currseg)) {
+                    if(currseg[j] == prevval & currseg[j] != currseg[j-1]) {
+                        count = count+1
+                        ## suggested fix for end of chromsome chain counts
+                        ## https://github.com/markowetzlab/CINSignatureQuantification/issues/22
+                        ## Included boolean to switch fix on and off
+                        if(usefix){
+                            if (j == length(currseg)) {
+                                oscCounts = c(oscCounts, count)
+                                count = 0
+                            }
+                        }
+                    } else {
+                        oscCounts = c(oscCounts,count)
+                        count = 0
+                    }
+                    prevval = currseg[j-1]
+                }
+            }
+        }
+
+    }
+    return(oscCounts)
+}
+
+reportChain <- function(x,y){
+    paste0(c("noFix = ","fix = "),
+       c(paste0(x,collapse = ""),
+       paste0(y,collapse = "")))
+}
+```
+
+## Preliminary count check
+
+```{r generate_test_segs}
+segTab_internal_chains <- data.frame(chromosome=c(rep("chr1",times=7),rep("chr2",times=7)),
+                 start=rep(c(1,100,200,300,400,500,600),times=2),
+                 end=rep(c(99,199,299,399,499,599,699),times=2),
+                 segVal=c(c(2,2,4,3,4,2,2),c(2,2,4,3,4,2,2)),
+                 sample=c(rep("sample1",times=14)))
+
+segTab_chr2_end_chains <- data.frame(chromosome=c(rep("chr1",times=7),rep("chr2",times=7)),
+                                     start=rep(c(1,100,200,300,400,500,600),times=2),
+                                     end=rep(c(99,199,299,399,499,599,699),times=2),
+                                     segVal=c(c(2,2,4,3,4,2,2),c(2,2,4,3,4,3,4)),
+                                     sample=c(rep("sample1",times=14)))
+
+segTab_twochains_chains <- data.frame(chromosome=c(rep("chr1",times=7),rep("chr2",times=7)),
+                                     start=rep(c(1,100,200,300,400,500,600),times=2),
+                                     end=rep(c(99,199,299,399,499,599,699),times=2),
+                                     segVal=c(c(4,3,4,2,3,4,3),c(4,3,4,3,4,3,4)),
+                                     sample=c(rep("sample1",times=14)))
+```
+
+```{r test_int_chains,warning=FALSE,message=FALSE}
+int_chain_nofix <- testOC(segTab = segTab_internal_chains)
+int_chains_fix <- testOC(segTab = segTab_internal_chains,usefix = T)
+
+reportChain(int_chain_nofix,int_chains_fix)
+plotSegments(createCNQuant(segTab_internal_chains),sample = 1)
+```
+
+```{r test_end_chain,warning=FALSE,message=FALSE}
+chr2_end_chain_nofix <- testOC(segTab = segTab_chr2_end_chains)
+chr2_end_chains_fix <- testOC(segTab = segTab_chr2_end_chains,usefix = T)
+
+reportChain(chr2_end_chain_nofix,chr2_end_chains_fix)
+plotSegments(createCNQuant(segTab_chr2_end_chains),sample = 1)
+```
+
+```{r test_two_chains}
+twochains_chain_nofix <- testOC(segTab = segTab_twochains_chains)
+twochains_chains_fix <- testOC(segTab = segTab_twochains_chains,usefix = T)
+
+reportChain(twochains_chain_nofix,twochains_chains_fix)
+plotSegments(createCNQuant(segTab_twochains_chains),sample = 1)
+```
+
+## Check features - TCGA gold set
+
+```{r generate_signatures_tcga_gold}
+qSigs <- quantifyCNSignatures(TCGA_478_Samples_SNP6_GOLD,method = "drews",build = "hg19",experimentName = "osCNtest")
+
+TCGA_478_Samples_SNP6_GOLD_list <- split(TCGA_478_Samples_SNP6_GOLD,f = TCGA_478_Samples_SNP6_GOLD$sample)
+q_noFix <- CINSignatureQuantification:::getOscillationDrews(TCGA_478_Samples_SNP6_GOLD_list)
+q_Fix <- CINSignatureQuantification:::getOscillationDrewsV2(TCGA_478_Samples_SNP6_GOLD_list)
+
+q_noFix$value <- as.numeric(q_noFix$value)
+q_Fix$value <- as.numeric(q_Fix$value)
+```
+
+```{r add_fixed_osCN_feat_to_sigquant_tcga_gold}
+qSigsFix <- createCNQuant(TCGA_478_Samples_SNP6_GOLD,build = "hg19",experimentName = "osCNtest")
+qSigsFix <- calculateFeatures(qSigsFix,method = "drews")
+qSigsFix@featData$osCN <- q_Fix
+
+all(qSigsFix@featData$osCN == q_Fix)
+
+qSigsFix <- calculateSampleByComponentMatrix(qSigsFix)
+qSigsFix <- calculateActivity(qSigsFix)
+```
+
+```{r test_chain_counts_tcga_gold}
+qFeatsNofix <- q_noFix
+qFeatsfix <- q_Fix
+
+sum(qFeatsNofix$value > 0)
+sum(qFeatsfix$value > 0)
+
+chain_counts <- data.frame(getOS_method=factor(c("original","fixed"),levels = c("original","fixed")),
+                           chains=c(sum(qFeatsNofix$value > 0),sum(qFeatsfix$value > 0)))
+
+ggplot(chain_counts) +
+    geom_col(aes(getOS_method,chains,fill=getOS_method)) +
+    geom_text(aes(getOS_method,chains-400,
+                  label=paste0(chains," (",(round(chains / sum(qFeatsNofix$value > 0),digits = 3))*100,"%)"))) +
+    labs(title = "Chain counts (TCGA 478 gold standard)") +
+    theme_bw() +
+    theme(legend.position = "bottom",axis.title.x = element_blank())
+```
+
+```{r test_chain_lengths_tcga_gold}
+chain_lengths <- data.frame(getOS_method=factor(c("original","fixed"),levels = c("original","fixed")),
+                           chain_lengths=c(sum(qFeatsNofix$value),sum(qFeatsfix$value)))
+
+ggplot(chain_lengths) +
+    geom_col(aes(getOS_method,chain_lengths,fill=getOS_method)) +
+    geom_text(aes(getOS_method,chain_lengths-400,
+                  label=paste0(chain_lengths," (",(round(chain_lengths / sum(qFeatsNofix$value),digits = 3))*100,"%)"))) +
+    labs(title = "Chain lengths (TCGA 478 gold standard)") +
+    theme_bw() +
+    theme(legend.position = "bottom",axis.title.x = element_blank())
+```
+
+```{r test_chain_density_tcga_gold}
+chain_density <- data.frame(getOS_method=factor(c(rep("original",times=length(qFeatsNofix$value)),
+                                                 rep("fixed",times=length(qFeatsfix$value))),c("original","fixed")),
+                                               value=c(qFeatsNofix$value,qFeatsfix$value))
+
+#chain_density <- chain_density[chain_density$value != 0,]
+
+summary(chain_density$value[chain_density$getOS_method == "original"])
+summary(chain_density$value[chain_density$getOS_method == "fixed"])
+
+ggplot(chain_density[chain_density$value < 10,]) +
+    geom_density(aes(value,fill=getOS_method),alpha=0.4) +
+    labs(title = "Chain length distribution (TCGA 478 gold standard)") +
+    theme_bw() +
+    theme(legend.position = "bottom",axis.title.x = element_blank())
+
+ggplot(chain_density[chain_density$value < 10,]) +
+    geom_density(aes(value,fill=getOS_method),alpha=0.4) +
+    labs(title = "Chain length distribution (TCGA 478 gold standard)") +
+    theme_bw() +
+    theme(legend.position = "bottom",axis.title.x = element_blank()) +
+    facet_wrap(.~getOS_method)
+```
+
+```{r sig_act_diffs_tcga_gold}
+qDiff <- getActivities(qSigsFix) - getActivities(qSigs)
+barplot(colMeans(qDiff),main = "Mean activity change")
+barplot(colMeans(qDiff) / colMeans(getActivities(qSigs)),main = "normalised mean activity change")
+```
+
+## Refitting mixtures on pan-cancer
+### OLD vs NEW PAN CANCER osCN mixture modelling
+
+```{r read_processed_segment_data_tcga_6335}
+# Read CN segment data after filtering, smoothing etc.
+# Do a load_all(CINSignatureQuantification) if needed
+segs_table <- readRDS("0_TCGA_Segments_dCIN.rds")
+segs <- split(segs_table,f = segs_table$sample)
+length(segs)
+```
+
+```{r load_features_existing_tcga_6335}
+# Load existing feats computed for publication
+existingFeats <- readRDS("1_tcga_filtered_ecnf.rds")
+dim(existingFeats$osCN)
+```
+
+```{r recalc_osCN_original_func_tcga_6335}
+## Original drews function to compute osCN using package functions
+osCN_nofix <- CINSignatureQuantification:::getOscillationDrews(segs)
+dim(osCN_nofix)
+```
+
+```{r compare_old_v_recalculated_tcga_6335}
+# New versions of old osCN match publication version of features using 6335 curated samples
+all(existingFeats$osCN == osCN_nofix)
+```
+
+```{r calc_newfixed_osCN_tcga_6335}
+## fixed osCN drews function with fix to compute osCN using package functions
+osCN_fix <- CINSignatureQuantification:::getOscillationDrewsV2(segs)
+dim(osCN_fix)
+```
+
+```{r mixtureModellingPoisson_tcga_6335}
+## Implementation of 23_Fit_MixtureModels.R condensed functions to run as single line
+# Original osCN from paper
+osCN_original_pub_mixtureModel <- Drews2022_TCGA_Mixture_Models$osCN
+# Run Poisson mixture using same publication parameters 100 times and use modal k and BIC
+# Original osCN feat refit
+if(!file.exists("osCN_noFix_mixtureModel_refitted.rds")){
+    osCN_noFix_mixtureModel <- CINSignatureQuantification:::fitMixturePois(osCN_nofix,seed = NULL,iters = 100,
+                                                                           max_comp = 5,cores = 11)
+    saveRDS(osCN_noFix_mixtureModel,file = "osCN_noFix_mixtureModel_refitted.rds")
+} else {
+    osCN_noFix_mixtureModel <- readRDS("osCN_noFix_mixtureModel_refitted.rds")
+}
+# New fixed osCN feat
+if(!file.exists("osCN_Fix_mixtureModel_newlyfitted.rds")){
+    osCN_Fix_mixtureModel <- CINSignatureQuantification:::CINfitMixturePois(osCN_fix,seed = NULL,iters = 100,
+                                                                            max_comp = 5,cores = 11)
+    saveRDS(osCN_Fix_mixtureModel,file = "osCN_Fix_mixtureModel_newlyfitted.rds")
+} else {
+    osCN_Fix_mixtureModel <- readRDS("osCN_Fix_mixtureModel_newlyfitted.rds")
+}
+```
+
+```{r mean_and_weights_mixturemodelling_tcga_6335}
+## extract mean and prior for both models
+osCN_noFix_mixtureModel_weights <- CINSignatureQuantification:::formatPoisModel(osCN_noFix_mixtureModel$model)
+osCN_Fix_mixtureModel_weights <- CINSignatureQuantification:::formatPoisModel(osCN_Fix_mixtureModel$model)
+
+if(!file.exists("osCN_oldrefittedVsnew_mixtures.rds")){
+    saveRDS(list(osCN_noFix_mixtureModel,osCN_noFix_mixtureModel_weights,
+             osCN_Fix_mixtureModel,osCN_Fix_mixtureModel_weights,
+             osCN_original_pub_mixtureModel),file = "osCN_oldrefittedVsnew_mixtures.rds")
+}
+
+compare_weights <- cbind(osCN_original_pub_mixtureModel,osCN_noFix_mixtureModel_weights,osCN_Fix_mixtureModel_weights)
+colnames(compare_weights) <- paste0(c("orig","orig","refit","refit","fixed","fixed"),".",colnames(compare_weights))
+compare_weights
+```
+
+## Generate new mixture model object with new osCN weights
+
+```{r add_new_osCN weights_to_mixtures}
+if(!file.exists("Drews2022_v2_TCGA_Mixture_Models.rds")){
+    Drews2022_v2_TCGA_Mixture_Models <- Drews2022_TCGA_Mixture_Models
+    Drews2022_v2_TCGA_Mixture_Models$osCN <- osCN_Fix_mixtureModel_weights
+    saveRDS(Drews2022_v2_TCGA_Mixture_Models,file = "Drews2022_v2_TCGA_Mixture_Models.rds")
+} else {
+    Drews2022_v2_TCGA_Mixture_Models <- readRDS("Drews2022_v2_TCGA_Mixture_Models.rds")
+}
+Drews2022_v2_TCGA_Mixture_Models$osCN
+```
+
+## Perform SoP and SxC calculation
+
+```{r run_existing_mixtures_tcga_6335}
+tcga_6335_cnquant_oldweights <- createCNQuant(segs_table,experimentName = "tcga_6335_oldMixture")
+tcga_6335_cnquant_oldweights <- calculateFeatures(tcga_6335_cnquant_oldweights,method = "drews",cores = 6)
+
+# features match in length and value between publication and refit
+lapply(names(existingFeats),FUN = function(x){
+    t1 <- all(nrow(tcga_6335_cnquant_oldweights@featData[x]) == nrow(existingFeats[x]))
+    t2 <- all(tcga_6335_cnquant_oldweights@featData[x]$value == existingFeats[x]$value)
+    c(t1,t2)
+})
+
+tcga_6335_cnquant_oldweights@featFitting <- CINSignatureQuantification:::calculateSampleByComponentMatrixDrews(brECNF = tcga_6335_cnquant_oldweights@featData)
+tcga_6335_cnquant_oldweights@featFitting$model$osCN
+
+osCN_old_sxc <- getSampleByComponent(tcga_6335_cnquant_oldweights)
+head(osCN_old_sxc)
+dim(osCN_old_sxc)
+```
+
+```{r run_new_mixtures_tcga_6335}
+tcga_6335_cnquant_newweights <- createCNQuant(segs_table,experimentName = "tcga_6335_newMixture")
+tcga_6335_cnquant_newweights@featData <- tcga_6335_cnquant_oldweights@featData
+## manually replace old osCN with newly computed osCN
+tcga_6335_cnquant_newweights@featData$osCN <- osCN_fix
+
+tcga_6335_cnquant_newweights@featFitting <- CINSignatureQuantification:::calculateSampleByComponentMatrixDrewsV2(brECNF = tcga_6335_cnquant_newweights@featData)
+tcga_6335_cnquant_newweights@featFitting$model$osCN
+```
+
+```{r get_new_sxc_tcga_6335}
+# verify new feature and new model weights
+dim(tcga_6335_cnquant_newweights@featData$osCN)
+tcga_6335_cnquant_newweights@featFitting$model$osCN
+
+osCN_new_sxc <- getSampleByComponent(tcga_6335_cnquant_newweights)
+osCN_new_cxs <- t(osCN_new_sxc)
+
+all(dim(osCN_old_sxc) == dim(osCN_new_sxc))
+colCompare <- sapply(1:ncol(osCN_old_sxc),FUN = function(x){ all(osCN_old_sxc[,x] == osCN_new_sxc[,x])})
+names(colCompare) <- colnames(osCN_old_sxc)
+colCompare
+
+if(!file.exists("pan_new_oscn_mixture_tcga_SxC.rds")){
+    saveRDS(osCN_new_sxc,"pan_new_oscn_mixture_tcga_SxC.rds")
+}
+if(!file.exists("pan_new_oscn_mixture_tcga_CxS.rds")){
+    saveRDS(osCN_new_cxs,"pan_new_oscn_mixture_tcga_CxS.rds")
+} 
+if(!file.exists("pan_new_oscn_mixture_tcga_CxS.tsv")){
+    write.table(osCN_new_cxs,file = "pan_new_oscn_mixture_tcga_CxS.tsv",quote = F,sep = "\t",row.names = T,col.names = T)
+}
+
+```
+
+
+```{r old_feats_new_weights_test}
+testsxc <- CINSignatureQuantification:::calculateSampleByComponentMatrixDrewsV2(brECNF = tcga_6335_cnquant_oldweights@featData)
+testsxcm <- testsxc$sampleByComponent
+
+testsxcm_sub <- testsxcm[,!colCompare]
+test_sxc_diff <- testsxcm_sub - osCN_old_sxc_sub
+
+barplot(colMeans(test_sxc_diff) / colMeans(osCN_old_sxc_sub))
+
+prop_change_test <- data.frame(test_sxc_diff / osCN_old_sxc_sub  * 100) %>%
+    tibble::rownames_to_column("sample") %>%
+    tidyr::pivot_longer(cols = 2:ncol(.),names_to = "component",values_to = "percentage_difference")
+
+ggplot() +
+    geom_point(data=prop_change_test[sample(1:nrow(prop_change_test),size = 2000,replace = F),],
+               aes(component,percentage_difference),position = position_jitter(),alpha = 0.05) +
+    geom_boxplot(data = prop_change_test,aes(component,percentage_difference)) +
+    ylab("percentage change (sum-of-posterior)") +
+    #scale_y_continuous(limits = c(0,NA)) +
+    facet_wrap(. ~ component,scales = "free_x") + 
+    theme_bw()
+```
+
+```{r compare_sxc_tcga_6335_vals}
+osCN_old_sxc_sub <- osCN_old_sxc[,!colCompare]
+osCN_new_sxc_sub <- osCN_new_sxc[,!colCompare]
+
+(colMeans(osCN_new_sxc_sub) - colMeans(osCN_old_sxc_sub)) / colMeans(osCN_old_sxc_sub) * 100
+#(colSums(osCN_new_sxc_sub) - colSums(osCN_old_sxc_sub)) / colSums(osCN_old_sxc_sub) * 100
+
+# matrix difference
+osCN_new_sxc_diff <- osCN_new_sxc_sub - osCN_old_sxc_sub
+# Absolute difference between old and new
+sum(abs(osCN_new_sxc_sub)) / sum(osCN_old_sxc_sub)
+barplot(colMeans(osCN_new_sxc_diff) / colMeans(osCN_old_sxc_sub) * 100)
+
+prop_change <- data.frame(osCN_new_sxc_diff / osCN_old_sxc_sub * 100) %>%
+    tibble::rownames_to_column("sample") %>%
+    tidyr::pivot_longer(cols = 2:ncol(.),names_to = "component",values_to = "percentage_difference")
+
+ggplot() +
+    geom_point(data=prop_change[sample(1:nrow(prop_change),size = 2000,replace = F),],
+               aes(component,percentage_difference),position = position_jitter(),alpha = 0.05) +
+    geom_boxplot(data = prop_change,aes(component,percentage_difference)) +
+    ylab("percentage change (sum-of-posterior)") +
+    #scale_y_continuous(limits = c(0,NA)) +
+    facet_wrap(. ~ component,scales = "free") + 
+    theme_bw()
+
+prop_change_summary <- prop_change %>%
+                        group_by(component) %>%
+                        select(-sample) %>%
+                        summarise_all(list(mean_percentage_change=mean,
+                                           median_percentage_change=median,
+                                           sd_percentage_change=sd))
+print(as.data.frame(prop_change_summary))
+
+tcga_6335_cnquant_oldweights@featData$osCN[tcga_6335_cnquant_oldweights@featData$osCN$ID == "TCGA-5K-AAAP",]
+tcga_6335_cnquant_newweights@featData$osCN[tcga_6335_cnquant_newweights@featData$osCN$ID == "TCGA-5K-AAAP",]
+
+print(cbind("oldFeat-oldWeight"=osCN_old_sxc[rownames(osCN_old_sxc) == "TCGA-5K-AAAP",41:43],
+      "oldFeat-newWeight"=testsxcm[rownames(testsxcm) == "TCGA-5K-AAAP",41:43],
+    "newFeat-newWeight"=osCN_new_sxc[rownames(osCN_new_sxc) == "TCGA-5K-AAAP",41:43]))
+```
+
+```{r generate_cs_sxc_subsets}
+meta.data <- read.table("Metadata_TCGA_ASCAT_penalty70.txt",header = T,sep = "\t")
+meta.data.filt <- meta.data[meta.data$dCIN,]
+
+splitSxCByGroup <- function(data=NULL,sampleCol="sample",group=NULL,groupdata=NULL,minsize=100){
+    if(is.null(data)){
+        stop("no data")
+    }
+    if(is.null(group)){
+        stop("no group")
+    }
+    if(is.null(groupdata)){
+        stop("no group data")
+    }
+    if(!all(c(sampleCol,group) %in% colnames(groupdata))){
+        stop("missing cols to split by group")
+    }
+    
+    subgroupdata <- groupdata[,c(sampleCol,group)]
+    sampsplit <- split(subgroupdata,f=subgroupdata[,group])
+    keepGroup <- unlist(lapply(sampsplit,FUN = function(x) nrow(x) >= minsize))
+    sampsplit <- sampsplit[keepGroup]
+    
+    splitsxc <- lapply(sampsplit,FUN = function(x){
+        sampleNames <- as.character(x[,sampleCol])
+        subsxc <- data[rownames(data) %in% sampleNames,]
+        return(subsxc)
+    })
+    
+    
+    return(splitsxc)
+}
+
+splitSxC <- splitSxCByGroup(osCN_new_sxc,sampleCol = "name",group = "cancer_type",groupdata = meta.data.filt)
+
+if(!file.exists("nmf_cxs_groups.txt")){
+    writeLines(names(splitSxC),con = "nmf_cxs_groups.txt")
+}
+
+lapply(names(splitSxC),FUN = function(x){
+    groupName <- x
+    grp <- splitSxC[[x]]
+    grp_t <- t(grp)
+    saveRDS(grp,paste0(groupName,"_new_oscn_mixture_tcga_SxC.rds"))
+    saveRDS(grp_t,paste0(groupName,"_new_oscn_mixture_tcga_CxS.rds"))
+    write.table(grp_t,file = paste0(groupName,"_new_oscn_mixture_tcga_CxS.tsv"),quote = F,sep = "\t",row.names = T,col.names = T)
+})
+```
+
+
+
+
+```{r sessionInfo}
+sessionInfo()
+```
