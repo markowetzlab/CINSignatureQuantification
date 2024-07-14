@@ -114,7 +114,7 @@ formatPoisModel <- function(model){
 getBestModel <- function(models,model_selection){
     modeV <- unlist(lapply(models,FUN = function(y) y@k))
     print(table(modeV))
-    mixtureMode <- collapse::fmode(modeV)
+    mixtureMode <- collapse::fmode(modeV,ties="min")
     message(paste0("Selecting modal k = ",mixtureMode))
     models <- models[which(modeV == mixtureMode)]
     bestSolutionMAX <- Inf

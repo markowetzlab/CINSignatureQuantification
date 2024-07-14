@@ -53,15 +53,8 @@ calculateArdNMF <- function(data=NULL,runs=1,max_iter=10000,regularisation_W="L1
     } else {
         ard_runs <- list(run_ard_nmf(data = data,nmf_options = nmf_options))
     }
-
-    finalRun <- choose_ard_nmf(ard_runs)
-    print(finalRun)
+    names(ard_runs) <- paste0("run",seq_len(length(ard_runs)))
     return(ard_runs)
-}
-
-choose_ard_nmf <- function(runs = NULL){
-    modalSigs <- collapse::fmode(unlist(lapply(runs,FUN = function(x){ x$nsigs})))
-    return(modalSigs)
 }
 
 parse_ard_nmf_args <- function(args){
@@ -94,7 +87,9 @@ run_ard_nmf <- function(data=NULL,nmf_options=NULL){
 format_ard_nmf <- function(x){
     ## Extract first 3 elements - nsgis,W and H mat and append iter report
     y <- x[[1]]
-    y$report <- x[[2]]
+
+    y$report <- as.data.frame(apply(x[[2]],MARGIN = 2,
+                                    FUN = function(x) as.numeric(unlist(x))))
     names(y) <- c("nsigs","W_df","H_df","report")
     return(y)
 }
@@ -119,4 +114,77 @@ install_ardnmf <- function(envname = "r-ardnmf",
     reticulate::use_condaenv(envname)
 }
 
-out10 <- calculateArdNMF(data = tab,runs = 10,max_iter = 1000)
+out10 <- calculateArdNMF(data = tab,runs = 20,max_iter = 1000)
+
+choose_ard_nmf <- function(runs = NULL,method="modal",k=NULL,decision="bdiv",specificRun=NULL){
+    if(is.null(runs)){
+        stop("runs not specified")
+    }
+    if(!method %in% c("modal","agnostic")){
+        stop("unknown selection method")
+    }
+    if(!decision %in% c("bdiv","obj")){
+        stop("unknown decision method")
+    }
+
+    if(is.null(specificRun)){
+        kvals <- unlist(sapply(runs,FUN = function(x){x$nsigs}))
+        if(!is.null(k)){
+            if(!k %in% kvals){
+                stop("User-specified 'k' number of sigs not present in any run")
+            } else {
+                message(paste0("selecting user-specified k - ",k))
+                nsig <- k
+            }
+        } else {
+            if(method == "modal"){
+                nsig <- collapse::fmode(kvals,ties="min")
+                message(paste0("selecting modal k - ",nsig))
+            } else {
+                message("using k-agnostic")
+                nsig <- NULL
+            }
+        }
+
+        if(!is.null(nsig)){
+            print(kvals)
+            print(nsig)
+            print(kvals == nsig)
+            subruns <- runs[kvals == nsig]
+            message(paste0("runs matching k - ",paste0(names(subruns),collapse = ",")))
+        } else {
+            subruns <- runs
+        }
+
+        best_run <- select_optimal_k(subrun = subruns,decision = decision)
+
+        finalsubruns <- subruns[[best_run]]
+    } else {
+        if(specificRun %in% names(runs)){
+            message(paste0("User-specified run selected -",specificRun))
+            finalsubruns <- runs[[specificRun]]
+        } else {
+            stop("specified run not found in list of runs")
+        }
+    }
+    return(finalsubruns)
+}
+
+select_optimal_k <- function(subrun=NULL,decision="bdiv"){
+    if(decision == "bdiv"){
+        div <- sapply(subrun,FUN = function(x) x$report[nrow(x$report),"b_div"])
+    } else if(decision == "obj"){
+        div <- sapply(subrun,FUN = function(x) x$report[nrow(x$report),"obj"])
+    } else {
+        stop("unknown method")
+    }
+    min_div <- min(div)
+    divmin <- which(div %in% min_div)
+    best_run_name <- names(div)[divmin]
+    message(paste0("best run - ",best_run_name))
+    return(best_run_name)
+}
+
+finalrun <- choose_ard_nmf(out10,method = "modal",decision = "bdiv")
+
+print(finalrun)
