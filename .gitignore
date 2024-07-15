@@ -11,3 +11,6 @@ tests/testthat/Rplots.pdf
 cnsignatures_osCN_refit/0_TCGA_Segments_dCIN.txt
 *CxS.tsv
 *.pyc
+cnsignatures_osCN_refit/data/0_TCGA_Segments_dCIN.txt
+/cnsignatures_osCN_refit/nmfruns
+!cnsignatures_osCN_refit/data/cancer_specific_sigs.rds

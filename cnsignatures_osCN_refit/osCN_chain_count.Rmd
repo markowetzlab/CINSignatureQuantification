@@ -16,6 +16,11 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(tibble)
+library(data.table)
+library(ComplexHeatmap)
+library(ggplot2)
+library(igraph)
+library(qgraph)
 library(CINSignatureQuantification) # install getOS-count branch of packaged
 ```
 
@@ -208,6 +213,10 @@ qDiff <- getActivities(qSigsFix) - getActivities(qSigs)
 barplot(colMeans(qDiff),main = "Mean activity change")
 barplot(colMeans(qDiff) / colMeans(getActivities(qSigs)),main = "normalised mean activity change")
 ```
+```{r sig_act_corr_tcga_gold}
+cancorr <- cor(getActivities(qSigs),getActivities(qSigsFix))
+corrplot::corrplot(cancorr)
+```
 
 ## Refitting mixtures on pan-cancer
 ### OLD vs NEW PAN CANCER osCN mixture modelling
@@ -215,14 +224,14 @@ barplot(colMeans(qDiff) / colMeans(getActivities(qSigs)),main = "normalised mean
 ```{r read_processed_segment_data_tcga_6335}
 # Read CN segment data after filtering, smoothing etc.
 # Do a load_all(CINSignatureQuantification) if needed
-segs_table <- readRDS("0_TCGA_Segments_dCIN.rds")
+segs_table <- readRDS("data/0_TCGA_Segments_dCIN.rds")
 segs <- split(segs_table,f = segs_table$sample)
 length(segs)
 ```
 
 ```{r load_features_existing_tcga_6335}
 # Load existing feats computed for publication
-existingFeats <- readRDS("1_tcga_filtered_ecnf.rds")
+existingFeats <- readRDS("data/1_tcga_filtered_ecnf.rds")
 dim(existingFeats$osCN)
 ```
 
@@ -249,20 +258,20 @@ dim(osCN_fix)
 osCN_original_pub_mixtureModel <- Drews2022_TCGA_Mixture_Models$osCN
 # Run Poisson mixture using same publication parameters 100 times and use modal k and BIC
 # Original osCN feat refit
-if(!file.exists("osCN_noFix_mixtureModel_refitted.rds")){
+if(!file.exists("data/osCN_noFix_mixtureModel_refitted.rds")){
     osCN_noFix_mixtureModel <- CINSignatureQuantification:::fitMixturePois(osCN_nofix,seed = NULL,iters = 100,
                                                                            max_comp = 5,cores = 11)
-    saveRDS(osCN_noFix_mixtureModel,file = "osCN_noFix_mixtureModel_refitted.rds")
+    saveRDS(osCN_noFix_mixtureModel,file = "data/osCN_noFix_mixtureModel_refitted.rds")
 } else {
-    osCN_noFix_mixtureModel <- readRDS("osCN_noFix_mixtureModel_refitted.rds")
+    osCN_noFix_mixtureModel <- readRDS("data/osCN_noFix_mixtureModel_refitted.rds")
 }
 # New fixed osCN feat
-if(!file.exists("osCN_Fix_mixtureModel_newlyfitted.rds")){
+if(!file.exists("data/osCN_Fix_mixtureModel_newlyfitted.rds")){
     osCN_Fix_mixtureModel <- CINSignatureQuantification:::CINfitMixturePois(osCN_fix,seed = NULL,iters = 100,
                                                                             max_comp = 5,cores = 11)
-    saveRDS(osCN_Fix_mixtureModel,file = "osCN_Fix_mixtureModel_newlyfitted.rds")
+    saveRDS(osCN_Fix_mixtureModel,file = "data/osCN_Fix_mixtureModel_newlyfitted.rds")
 } else {
-    osCN_Fix_mixtureModel <- readRDS("osCN_Fix_mixtureModel_newlyfitted.rds")
+    osCN_Fix_mixtureModel <- readRDS("data/osCN_Fix_mixtureModel_newlyfitted.rds")
 }
 ```
 
@@ -271,10 +280,10 @@ if(!file.exists("osCN_Fix_mixtureModel_newlyfitted.rds")){
 osCN_noFix_mixtureModel_weights <- CINSignatureQuantification:::formatPoisModel(osCN_noFix_mixtureModel$model)
 osCN_Fix_mixtureModel_weights <- CINSignatureQuantification:::formatPoisModel(osCN_Fix_mixtureModel$model)
 
-if(!file.exists("osCN_oldrefittedVsnew_mixtures.rds")){
+if(!file.exists("data/osCN_oldrefittedVsnew_mixtures.rds")){
     saveRDS(list(osCN_noFix_mixtureModel,osCN_noFix_mixtureModel_weights,
              osCN_Fix_mixtureModel,osCN_Fix_mixtureModel_weights,
-             osCN_original_pub_mixtureModel),file = "osCN_oldrefittedVsnew_mixtures.rds")
+             osCN_original_pub_mixtureModel),file = "data/osCN_oldrefittedVsnew_mixtures.rds")
 }
 
 compare_weights <- cbind(osCN_original_pub_mixtureModel,osCN_noFix_mixtureModel_weights,osCN_Fix_mixtureModel_weights)
@@ -285,12 +294,12 @@ compare_weights
 ## Generate new mixture model object with new osCN weights
 
 ```{r add_new_osCN weights_to_mixtures}
-if(!file.exists("Drews2022_v2_TCGA_Mixture_Models.rds")){
+if(!file.exists("data/Drews2022_v2_TCGA_Mixture_Models.rds")){
     Drews2022_v2_TCGA_Mixture_Models <- Drews2022_TCGA_Mixture_Models
     Drews2022_v2_TCGA_Mixture_Models$osCN <- osCN_Fix_mixtureModel_weights
-    saveRDS(Drews2022_v2_TCGA_Mixture_Models,file = "Drews2022_v2_TCGA_Mixture_Models.rds")
+    saveRDS(Drews2022_v2_TCGA_Mixture_Models,file = "data/Drews2022_v2_TCGA_Mixture_Models.rds")
 } else {
-    Drews2022_v2_TCGA_Mixture_Models <- readRDS("Drews2022_v2_TCGA_Mixture_Models.rds")
+    Drews2022_v2_TCGA_Mixture_Models <- readRDS("data/Drews2022_v2_TCGA_Mixture_Models.rds")
 }
 Drews2022_v2_TCGA_Mixture_Models$osCN
 ```
@@ -339,14 +348,14 @@ colCompare <- sapply(1:ncol(osCN_old_sxc),FUN = function(x){ all(osCN_old_sxc[,x
 names(colCompare) <- colnames(osCN_old_sxc)
 colCompare
 
-if(!file.exists("pan_new_oscn_mixture_tcga_SxC.rds")){
-    saveRDS(osCN_new_sxc,"pan_new_oscn_mixture_tcga_SxC.rds")
+if(!file.exists("data/pan_new_oscn_mixture_tcga_SxC.rds")){
+    saveRDS(osCN_new_sxc,"data/pan_new_oscn_mixture_tcga_SxC.rds")
 }
-if(!file.exists("pan_new_oscn_mixture_tcga_CxS.rds")){
-    saveRDS(osCN_new_cxs,"pan_new_oscn_mixture_tcga_CxS.rds")
+if(!file.exists("data/pan_new_oscn_mixture_tcga_CxS.rds")){
+    saveRDS(osCN_new_cxs,"data/pan_new_oscn_mixture_tcga_CxS.rds")
 } 
-if(!file.exists("pan_new_oscn_mixture_tcga_CxS.tsv")){
-    write.table(osCN_new_cxs,file = "pan_new_oscn_mixture_tcga_CxS.tsv",quote = F,sep = "\t",row.names = T,col.names = T)
+if(!file.exists("data/pan_new_oscn_mixture_tcga_CxS.tsv")){
+    write.table(osCN_new_cxs,file = "data/pan_new_oscn_mixture_tcga_CxS.tsv",quote = F,sep = "\t",row.names = T,col.names = T)
 }
 
 ```
@@ -356,6 +365,7 @@ if(!file.exists("pan_new_oscn_mixture_tcga_CxS.tsv")){
 testsxc <- CINSignatureQuantification:::calculateSampleByComponentMatrixDrewsV2(brECNF = tcga_6335_cnquant_oldweights@featData)
 testsxcm <- testsxc$sampleByComponent
 
+osCN_old_sxc_sub <- osCN_old_sxc[,!colCompare]
 testsxcm_sub <- testsxcm[,!colCompare]
 test_sxc_diff <- testsxcm_sub - osCN_old_sxc_sub
 
@@ -376,7 +386,6 @@ ggplot() +
 ```
 
 ```{r compare_sxc_tcga_6335_vals}
-osCN_old_sxc_sub <- osCN_old_sxc[,!colCompare]
 osCN_new_sxc_sub <- osCN_new_sxc[,!colCompare]
 
 (colMeans(osCN_new_sxc_sub) - colMeans(osCN_old_sxc_sub)) / colMeans(osCN_old_sxc_sub) * 100
@@ -418,7 +427,7 @@ print(cbind("oldFeat-oldWeight"=osCN_old_sxc[rownames(osCN_old_sxc) == "TCGA-5K-
 ```
 
 ```{r generate_cs_sxc_subsets}
-meta.data <- read.table("Metadata_TCGA_ASCAT_penalty70.txt",header = T,sep = "\t")
+meta.data <- read.table("data/Metadata_TCGA_ASCAT_penalty70.txt",header = T,sep = "\t")
 meta.data.filt <- meta.data[meta.data$dCIN,]
 
 splitSxCByGroup <- function(data=NULL,sampleCol="sample",group=NULL,groupdata=NULL,minsize=100){
@@ -452,22 +461,103 @@ splitSxCByGroup <- function(data=NULL,sampleCol="sample",group=NULL,groupdata=NU
 
 splitSxC <- splitSxCByGroup(osCN_new_sxc,sampleCol = "name",group = "cancer_type",groupdata = meta.data.filt)
 
-if(!file.exists("nmf_cxs_groups.txt")){
-    writeLines(names(splitSxC),con = "nmf_cxs_groups.txt")
+if(!file.exists("data/nmf_cxs_groups.txt")){
+    writeLines(names(splitSxC),con = "data/nmf_cxs_groups.txt")
 }
 
-lapply(names(splitSxC),FUN = function(x){
-    groupName <- x
-    grp <- splitSxC[[x]]
-    grp_t <- t(grp)
-    saveRDS(grp,paste0(groupName,"_new_oscn_mixture_tcga_SxC.rds"))
-    saveRDS(grp_t,paste0(groupName,"_new_oscn_mixture_tcga_CxS.rds"))
-    write.table(grp_t,file = paste0(groupName,"_new_oscn_mixture_tcga_CxS.tsv"),quote = F,sep = "\t",row.names = T,col.names = T)
-})
+if(!any(file.exists(paste0("data/",names(splitSxC),"_new_oscn_mixture_tcga_SxC.rds")))){
+    lapply(names(splitSxC),FUN = function(x){
+        groupName <- x
+        grp <- splitSxC[[x]]
+        grp_t <- t(grp)
+        saveRDS(grp,paste0("data/",groupName,"_new_oscn_mixture_tcga_SxC.rds"))
+        saveRDS(grp_t,paste0("data/",groupName,"_new_oscn_mixture_tcga_CxS.rds"))
+        write.table(grp_t,file = paste0("data/",groupName,"_new_oscn_mixture_tcga_CxS.tsv"),quote = F,sep = "\t",row.names = T,col.names = T)
+    })
+}
 ```
 
+## Assess ARD-NMF runs
 
+```{r load_pan_cancer_nmf_tcga_6335_funs}
+source("2_Decide_signature_solution_functions.R")
+```
 
+```{r load_pan_cancer_nmf_tcga_6335}
+PATHTOFILES="nmfruns/results/BayesNMF_pan/"
+OUTPUTDIR="nmfruns/solutions/pan_cancer"
+
+if(!dir.exists(OUTPUTDIR)){
+    dir.create(path = OUTPUTDIR,recursive = T)
+}
+
+lResults = loadNMFresults(PATHTOFILES)
+plotHistOfKs(lResults$lData)
+
+OVERRIDEK=10
+thisK = detK(lResults$lData, OVERRIDEK=OVERRIDEK)
+## Identify and extract optimal solution
+lOptimal = idOptimalSolution(lResults$lData, lResults$allSamples, PATHTOFILES, LOGPATTERN="log.txt", thisK = thisK, DECISION="div", OUTPUTDIR=OUTPUTDIR)
+
+bestSolution = lResults$lData[[ lOptimal$bestSample ]]
+
+plotHist = plotHistOfKs(lResults$lData)
+## How close are the signatures of the same K?
+plotHeat1 = plotCosineHeat(lResults$lData, lResults$allSamples, thisK)
+## Plot hairball and heatmap with best solution
+plotSigs = plotHairballAndHeatmap(lResults$lData, lResults$allSamples, lOptimal$bestSample, lOptimal$thisK)
+catchPlot = ViewHairball(plotSigs$hairball)
+
+#iewHairball(plotSigs$hairball)
+#### Combine plots into a pdf and move files from selection solution ("bestSolution") into a user-specified directory
+catchTrue = makeOutputFiles(OUTPUTDIR=OUTPUTDIR, lOptimal$bestSample, lOptimal$thisK, plotHist=plotHist, plotHeat1=plotHeat1, plotSigs=plotSigs, PATHTOFILES=PATHTOFILES)
+
+```
+
+```{r cs_nmf_tcga_6335_get_nsigs}
+if(!file.exists("data/cancer_specific_sigs.rds")){
+    cancer_specific_sigs <- do.call(rbind,lapply(list.files("../../CINSignatureDiscovery/Denovo_Signature_Discovery/",pattern = "4_",full.names = T),
+                                                FUN = function(x){data.frame(cancer=gsub(basename(x),pattern=".txt|4_Signatures_",replacement = ""),sigs=ncol(data.frame(fread(x),row.names = 1)))}))
+    saveRDS(cancer_specific_sigs,file = "data/cancer_specific_sigs.rds")
+} else {
+    cancer_specific_sigs <- readRDS("data/cancer_specific_sigs.rds")
+}
+```
+
+```{r run_cs_nmf_tcga_6335_solutions,warning=FALSE}
+for(i in cancer_specific_sigs$cancer){
+    cs <- i
+    
+    PATHTOFILES=paste0("nmfruns/results/BayesNMF_",cs,"/")
+    OUTPUTDIR=paste0("nmfruns/solutions/",cs,"_cancer")
+    
+    if(!dir.exists(OUTPUTDIR)){
+        dir.create(path = OUTPUTDIR,recursive = T)
+    }
+    
+    lResults = loadNMFresults(PATHTOFILES)
+    #plotHistOfKs(lResults$lData)
+    
+    OVERRIDEK=cancer_specifc_sigs$sigs[cancer_specifc_sigs$cancer == cs]
+    print(c(cs,OVERRIDEK))
+    thisK = detK(lResults$lData, OVERRIDEK=OVERRIDEK)
+    ## Identify and extract optimal solution
+    lOptimal = idOptimalSolution(lResults$lData, lResults$allSamples, PATHTOFILES, LOGPATTERN="log.txt", thisK = thisK, DECISION="div", OUTPUTDIR=OUTPUTDIR)
+    
+    bestSolution = lResults$lData[[ lOptimal$bestSample ]]
+    
+    plotHist = plotHistOfKs(lResults$lData)
+    ## How close are the signatures of the same K?
+    plotHeat1 = plotCosineHeat(lResults$lData, lResults$allSamples, thisK)
+    ## Plot hairball and heatmap with best solution
+    plotSigs = plotHairballAndHeatmap(lResults$lData, lResults$allSamples, lOptimal$bestSample, lOptimal$thisK)
+    catchPlot = ViewHairball(plotSigs$hairball)
+    
+    #ViewHairball(plotSigs$hairball)
+    #### Combine plots into a pdf and move files from selection solution ("bestSolution") into a user-specified directory
+    catchTrue = makeOutputFiles(OUTPUTDIR=OUTPUTDIR, lOptimal$bestSample, lOptimal$thisK, plotHist=plotHist, plotHeat1=plotHeat1, plotSigs=plotSigs, PATHTOFILES=PATHTOFILES)
+}
+```
 
 ```{r sessionInfo}
 sessionInfo()
