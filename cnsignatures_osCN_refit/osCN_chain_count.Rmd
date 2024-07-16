@@ -21,6 +21,8 @@ library(ComplexHeatmap)
 library(ggplot2)
 library(igraph)
 library(qgraph)
+library(lsa)
+library(ggthemes)
 library(CINSignatureQuantification) # install getOS-count branch of packaged
 ```
 
@@ -557,6 +559,153 @@ for(i in cancer_specific_sigs$cancer){
     #### Combine plots into a pdf and move files from selection solution ("bestSolution") into a user-specified directory
     catchTrue = makeOutputFiles(OUTPUTDIR=OUTPUTDIR, lOptimal$bestSample, lOptimal$thisK, plotHist=plotHist, plotHeat1=plotHeat1, plotSigs=plotSigs, PATHTOFILES=PATHTOFILES)
 }
+```
+
+## Combine pan-cancer and cancer-specific
+
+```{r combine_pc_cs_tcga_6335_vars}
+PANCANCERSIGS="nmfruns/solutions/pan_cancer/2_Signatures_ENBKKW_normalised.rds"
+PANCANCEREXP="nmfruns/solutions/pan_cancer/2_Exposures_ENBKKW_normalised.rds"
+PATHCANCERSPECIFIC="nmfruns/solutions"
+PATTERNSIGS="2_Signatures"
+PATTERNEXP="2_Exposures"
+COSINETHRESH=0.74
+CANCERCOLS="data/TCGA_colour_scheme.txt"
+OUTDIR="data/combined_sigs"
+
+cancerCols = read.table(CANCERCOLS, header = FALSE, comment.char = "|")
+vCols = as.character(cancerCols$V2)
+names(vCols) = cancerCols$V1
+vCols = c(vCols, "TCGA" = "#636363")
+
+source("51_Combine_PC_and_CS_Signatures_functions.R")
+```
+
+```{r combine_pc_cs_tcga_6335_load_pc}
+pcSigs = readSigs(PANCANCERSIGS, name = "pan_cancer")
+pcExp = t(readExp(PANCANCEREXP, name = "pan_cancer"))
+head(pcSigs)
+head(pcExp)
+```
+
+```{r combine_pc_cs_tcga_6335_load_cs}
+# Cancer-specific signatures
+allCSigFiles = list.files( path = PATHCANCERSPECIFIC, pattern = PATTERNSIGS, full.names = TRUE,recursive = TRUE)
+allCSigFiles = allCSigFiles[ grep( "normalised", allCSigFiles, invert = TRUE ) ]
+allCSigFiles = allCSigFiles[ grep( "not_used", allCSigFiles, invert = TRUE ) ]
+allCSigFiles = allCSigFiles[ grep( "summary", allCSigFiles, invert = TRUE ) ]
+lCSigs = lapply(allCSigFiles, function(thisFile) {
+    
+    thisName = basename(dirname(thisFile))
+    thisSig = readSigs(thisFile, name = thisName)
+    return(thisSig)
+    
+} )
+dfCS = do.call(rbind, lCSigs)
+matAll = as.matrix( rbind(dfCS, pcSigs) )
+head(matAll)
+```
+
+```{r combine_pc_cs_tcga_6335_load_ce}
+# Cancer-specific exposures
+allCExpFiles = list.files( path = PATHCANCERSPECIFIC, pattern = PATTERNEXP, full.names = TRUE,recursive = TRUE)
+allCExpFiles = allCExpFiles[ grep( "normalised", allCExpFiles ) ]
+allCExpFiles = allCExpFiles[ grep( "not_used", allCExpFiles, invert = TRUE ) ]
+lCExp = lapply(allCExpFiles, function(thisFile) {
+    
+    thisName = basename(dirname(thisFile))
+    thisExp = t(readSigs(thisFile, name = thisName))
+    return(thisExp)
+    
+} )
+names(lCExp) = basename(dirname(allCExpFiles))
+head(lCExp$BLCA_cancer)
+```
+
+```{r combine_pc_cs_tcga_6335_hairball}
+outfileHairball = file.path(OUTDIR, paste0("0_Hairball_PC_and_CS_sigs_cosineSim"))
+plotHairball(matAll, outfileHairball, numPCSigs = nrow(pcSigs), corThreshold = COSINETHRESH, 
+             cancerCols = cancerCols, corMethod = "cosine", plot2File = FALSE)
+```
+
+```{r combine_pc_cs_tcga_6335_corHM}
+corMat = cosine(t(matAll))
+Heatmap(corMat, show_row_names = FALSE, show_column_names = FALSE, name = "Cosine_Sim")
+```
+
+
+```{r combine_pc_cs_tcga_6335_corFiltHM}
+corMatFilt = corMat
+corMatFilt[ corMatFilt < COSINETHRESH ] = 0
+Heatmap(corMatFilt, show_row_names = FALSE, show_column_names = FALSE, name = "Cosine_Sim")
+```
+
+```{r combine_pc_cs_tcga_6335_sigExpCount}
+dtExposedSamples = samplesPerSignature(lCExp, EXPTRESH = 0.05)
+ggplot(dtExposedSamples, aes(x = Samples, fill = Cancer)) + geom_histogram() + scale_x_log10() + 
+    scale_fill_manual(values = vCols) + theme_tufte(base_family = "", base_size = 24) + ylab("Count") + 
+    ggtitle("Frequency of signature exposure") + guides(fill = guide_legend(ncol= 1))
+```
+
+```{r combine_pc_cs_tcga_6335_filtSigs}
+print(paste0("previous cosine threshold - ",COSINETHRESH))
+
+# Previous cosine threshold of 0.74 resulted in 19 signatures being retained after PC-CS and CS-CS filtering
+# Dropping the threshold to 0.72 returned 17 signature definitions.
+
+## Step 2: CS sig vs PC sig
+filtMatAll = removePCSimilarSigs(matAll, COSINETHRESH = 0.72,PREFIXPCSIGS = "pan_cancer")
+dim(filtMatAll)
+
+## Step 3: CS sigs vs CS sig (retain signature with most exposed samples)
+csSigs = removeCSSimilarSigs(filtMatAll, dtExposedSamples, COSINETHRESH = 0.72)
+dim(csSigs)
+
+matPCSC = rbind(pcSigs, csSigs)
+dim(matPCSC)
+head(matPCSC)
+```
+
+```{r combine_pc_cs_tcga_6335_combinedSigs,message=FALSE}
+Heatmap(matPCSC, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "New pan-cancer signature compendium",name = "weight")
+
+mOther = matPCSC
+mOther = apply(mOther, 2, function(y) y/sum(y))
+#Heatmap(mOther, cluster_columns = FALSE, column_title = "PCSC (normalised per component)",name = "weight")
+
+#Heatmap(pcSigs, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "Pan-cancer signatures")
+#Heatmap(csSigs, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "Cancer-specific signatures")
+```
+
+```{r combine_pc_cs_tcga_6335_oldSigs,message=FALSE}
+oldSigDefs <- CINSignatureQuantification::Drews2022_TCGA_Signatures
+Heatmap(oldSigDefs, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "Drews 2022 signatures",name="weight")
+```
+
+```{r combine_pc_cs_tcga_6335_compSigsDefs}
+compOldNewCosine <- cosine(t(rbind(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC)))
+compOldNewCosineFilt <- compOldNewCosine[,!colnames(compOldNewCosine) %in% paste0("CX",seq_len(17))]
+compOldNewCosineFilt <- compOldNewCosineFilt[rownames(compOldNewCosineFilt) %in% paste0("CX",seq_len(17)),]
+
+compOldNewCosineFiltThresh <- compOldNewCosineFilt
+Heatmap(compOldNewCosineFiltThresh, cluster_columns = F, cluster_rows = FALSE,
+        column_title = "Signature definition comparison (no threshold)",name = "cosine sim")
+
+compOldNewCosineFiltThresh[compOldNewCosineFiltThresh < 0.72] = 0
+sum(apply(compOldNewCosineFiltThresh,MARGIN = 2,FUN = function(x) sum(any(x >= 0.72))))
+Heatmap(compOldNewCosineFiltThresh, cluster_columns = F, cluster_rows = FALSE,
+        column_title = "Signature definition comparison (cosine >= 0.72)",name = "cosine sim")
+
+compOldNewCosineFiltThresh[compOldNewCosineFiltThresh < 0.90] = 0
+sum(apply(compOldNewCosineFiltThresh,MARGIN = 2,FUN = function(x) sum(any(x >= 0.90))))
+Heatmap(compOldNewCosineFiltThresh, cluster_columns = F, cluster_rows = FALSE,
+        column_title = "Signature definition comparison (cosine >= 0.90)",name = "cosine sim")
+
+compOldNewCosineFiltThresh[compOldNewCosineFiltThresh < 0.95] = 0
+sum(apply(compOldNewCosineFiltThresh,MARGIN = 2,FUN = function(x) sum(any(x >= 0.95))))
+Heatmap(compOldNewCosineFiltThresh, cluster_columns = F, cluster_rows = FALSE,
+        column_title = "Signature definition comparison (cosine >= 0.95)",name = "cosine sim")
+
 ```
 
 ```{r sessionInfo}

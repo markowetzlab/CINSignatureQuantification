@@ -33,7 +33,7 @@ length(merged_tables$samplename[match(icgc_seg_ids,merged_tables$icgc_sample_id)
 # Confirm no NA mappings
 any(is.na(merged_tables$samplename[match(icgc_seg_ids,merged_tables$icgc_sample_id)]))
 
-# Add new sample col to segment table reflecting ids in activites matrix
+# Add new sample col to segment table reflecting ids in activities matrix
 icgc_segs$sampleNew <- merged_tables$samplename[match(icgc_segs$sample,merged_tables$icgc_sample_id)]
 
 missingIds <- rownames(activities)[which(!rownames(activities) %in% unique(icgc_segs$sampleNew))]
