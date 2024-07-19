@@ -26,8 +26,8 @@ library(ggthemes)
 library(CINSignatureQuantification) # install getOS-count branch of packaged
 ```
 
-```{r testOCfunc}
-# Extracted version of core component of osCN function with togglable fix
+```{r funcs}
+# Extracted version of core component of osCN function with fix toggle
 # Loop over chromosomes to identify oscillation
 testOC <- function(segTab,usefix=FALSE){
 
@@ -82,9 +82,35 @@ reportChain <- function(x,y){
        c(paste0(x,collapse = ""),
        paste0(y,collapse = "")))
 }
+
+plotCosineHeatmap <- function(x1=NULL,x2=NULL,title="",threshold=0.74,compGroup=paste0("CX",seq_len(17)),legTitle="cosine sim"){
+    if(is.null(x1)){
+        stop("no data")
+    }
+    if(is.null(x2)){
+        cosinex1x2 <- cosine(t(x1))
+    } else {
+        cosinex1x2 <- cosine(t(rbind(x1,x2)))
+    }
+    
+    cosinex1x2 <- cosinex1x2[,!colnames(cosinex1x2) %in% compGroup]
+    if(!is.null(x2)){
+        cosinex1x2 <- cosinex1x2[rownames(cosinex1x2) %in% compGroup,]
+    }
+    cosinex1x2[cosinex1x2 < threshold] = 0
+    Heatmap(cosinex1x2, cluster_columns = F, cluster_rows = FALSE,
+        column_title = title,name = legTitle,
+        cell_fun = function(j, i, x, y, w, h, col) {
+            if(round(cosinex1x2,digits = 2)[i, j] > threshold){# add text to each grid
+        grid.text(round(cosinex1x2,digits = 2)[i, j], x, y)
+            }
+    })
+}
 ```
 
 ## Preliminary count check
+
+Generate some basic "genomes" with differing segment positions and oscillating chains
 
 ```{r generate_test_segs}
 segTab_internal_chains <- data.frame(chromosome=c(rep("chr1",times=7),rep("chr2",times=7)),
@@ -106,6 +132,8 @@ segTab_twochains_chains <- data.frame(chromosome=c(rep("chr1",times=7),rep("chr2
                                      sample=c(rep("sample1",times=14)))
 ```
 
+Generated test cases were check using both the original and "fixed" implementation and demonstrate that the existing function fails to capture any chain in which the terminating segment is the same as the last segment in a given chromosome.
+
 ```{r test_int_chains,warning=FALSE,message=FALSE}
 int_chain_nofix <- testOC(segTab = segTab_internal_chains)
 int_chains_fix <- testOC(segTab = segTab_internal_chains,usefix = T)
@@ -122,7 +150,7 @@ reportChain(chr2_end_chain_nofix,chr2_end_chains_fix)
 plotSegments(createCNQuant(segTab_chr2_end_chains),sample = 1)
 ```
 
-```{r test_two_chains}
+```{r test_two_chains,warning=FALSE}
 twochains_chain_nofix <- testOC(segTab = segTab_twochains_chains)
 twochains_chains_fix <- testOC(segTab = segTab_twochains_chains,usefix = T)
 
@@ -132,24 +160,32 @@ plotSegments(createCNQuant(segTab_twochains_chains),sample = 1)
 
 ## Check features - TCGA gold set
 
+To assess the extent of difference in the existing and fixed implementation of osCN feature the two versions were computed across the TCGA 478 sample gold standard set provided with the CINSignatureQuantification package
+
 ```{r generate_signatures_tcga_gold}
+# Generate full set of data for gold standard set using existing code as reference
 qSigs <- quantifyCNSignatures(TCGA_478_Samples_SNP6_GOLD,method = "drews",build = "hg19",experimentName = "osCNtest")
 
+# Split segment table into list for direct feature extraction using newly adapted getOscillationDrewsV2 function
 TCGA_478_Samples_SNP6_GOLD_list <- split(TCGA_478_Samples_SNP6_GOLD,f = TCGA_478_Samples_SNP6_GOLD$sample)
 q_noFix <- CINSignatureQuantification:::getOscillationDrews(TCGA_478_Samples_SNP6_GOLD_list)
 q_Fix <- CINSignatureQuantification:::getOscillationDrewsV2(TCGA_478_Samples_SNP6_GOLD_list)
 
+# adjustment to output type
 q_noFix$value <- as.numeric(q_noFix$value)
 q_Fix$value <- as.numeric(q_Fix$value)
 ```
 
 ```{r add_fixed_osCN_feat_to_sigquant_tcga_gold}
+# Create a new CNQuant object from CINSignatureQuantification package and overwrite the existing osCN with the computed "fixed" osCN
 qSigsFix <- createCNQuant(TCGA_478_Samples_SNP6_GOLD,build = "hg19",experimentName = "osCNtest")
 qSigsFix <- calculateFeatures(qSigsFix,method = "drews")
 qSigsFix@featData$osCN <- q_Fix
 
+# Check that the data is matching and in the correct slot
 all(qSigsFix@featData$osCN == q_Fix)
 
+# Calculate the SxC and activities using the old weights and signature definitions
 qSigsFix <- calculateSampleByComponentMatrix(qSigsFix)
 qSigsFix <- calculateActivity(qSigsFix)
 ```
@@ -331,6 +367,7 @@ dim(osCN_old_sxc)
 tcga_6335_cnquant_newweights <- createCNQuant(segs_table,experimentName = "tcga_6335_newMixture")
 tcga_6335_cnquant_newweights@featData <- tcga_6335_cnquant_oldweights@featData
 ## manually replace old osCN with newly computed osCN
+osCN_fix$value <- as.numeric(osCN_fix$value)
 tcga_6335_cnquant_newweights@featData$osCN <- osCN_fix
 
 tcga_6335_cnquant_newweights@featFitting <- CINSignatureQuantification:::calculateSampleByComponentMatrixDrewsV2(brECNF = tcga_6335_cnquant_newweights@featData)
@@ -350,6 +387,9 @@ colCompare <- sapply(1:ncol(osCN_old_sxc),FUN = function(x){ all(osCN_old_sxc[,x
 names(colCompare) <- colnames(osCN_old_sxc)
 colCompare
 
+if(!file.exists("data/tcga_6335_cnquant_newweights.rds")){
+    saveRDS(tcga_6335_cnquant_newweights,"data/tcga_6335_cnquant_newweights.rds")
+}
 if(!file.exists("data/pan_new_oscn_mixture_tcga_SxC.rds")){
     saveRDS(osCN_new_sxc,"data/pan_new_oscn_mixture_tcga_SxC.rds")
 }
@@ -584,14 +624,15 @@ source("51_Combine_PC_and_CS_Signatures_functions.R")
 ```{r combine_pc_cs_tcga_6335_load_pc}
 pcSigs = readSigs(PANCANCERSIGS, name = "pan_cancer")
 pcExp = t(readExp(PANCANCEREXP, name = "pan_cancer"))
-head(pcSigs)
-head(pcExp)
+head(pcSigs)[,1:9]
+head(pcExp)[,1:9]
 ```
 
 ```{r combine_pc_cs_tcga_6335_load_cs}
 # Cancer-specific signatures
 allCSigFiles = list.files( path = PATHCANCERSPECIFIC, pattern = PATTERNSIGS, full.names = TRUE,recursive = TRUE)
 allCSigFiles = allCSigFiles[ grep( "normalised", allCSigFiles, invert = TRUE ) ]
+allCSigFiles = allCSigFiles[ grep( "pan_cancer", allCSigFiles, invert = TRUE ) ]
 allCSigFiles = allCSigFiles[ grep( "not_used", allCSigFiles, invert = TRUE ) ]
 allCSigFiles = allCSigFiles[ grep( "summary", allCSigFiles, invert = TRUE ) ]
 lCSigs = lapply(allCSigFiles, function(thisFile) {
@@ -642,39 +683,21 @@ Heatmap(corMatFilt, show_row_names = FALSE, show_column_names = FALSE, name = "C
 
 ```{r combine_pc_cs_tcga_6335_sigExpCount}
 dtExposedSamples = samplesPerSignature(lCExp, EXPTRESH = 0.05)
-ggplot(dtExposedSamples, aes(x = Samples, fill = Cancer)) + geom_histogram() + scale_x_log10() + 
-    scale_fill_manual(values = vCols) + theme_tufte(base_family = "", base_size = 24) + ylab("Count") + 
-    ggtitle("Frequency of signature exposure") + guides(fill = guide_legend(ncol= 1))
-```
 
-```{r combine_pc_cs_tcga_6335_filtSigs}
-print(paste0("previous cosine threshold - ",COSINETHRESH))
+dtExposedSamples2 <- rownames_to_column(dtExposedSamples,var = "signatureID")
 
-# Previous cosine threshold of 0.74 resulted in 19 signatures being retained after PC-CS and CS-CS filtering
-# Dropping the threshold to 0.72 returned 17 signature definitions.
-
-## Step 2: CS sig vs PC sig
-filtMatAll = removePCSimilarSigs(matAll, COSINETHRESH = 0.72,PREFIXPCSIGS = "pan_cancer")
-dim(filtMatAll)
-
-## Step 3: CS sigs vs CS sig (retain signature with most exposed samples)
-csSigs = removeCSSimilarSigs(filtMatAll, dtExposedSamples, COSINETHRESH = 0.72)
-dim(csSigs)
-
-matPCSC = rbind(pcSigs, csSigs)
-dim(matPCSC)
-head(matPCSC)
-```
-
-```{r combine_pc_cs_tcga_6335_combinedSigs,message=FALSE}
-Heatmap(matPCSC, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "New pan-cancer signature compendium",name = "weight")
-
-mOther = matPCSC
-mOther = apply(mOther, 2, function(y) y/sum(y))
-#Heatmap(mOther, cluster_columns = FALSE, column_title = "PCSC (normalised per component)",name = "weight")
-
-#Heatmap(pcSigs, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "Pan-cancer signatures")
-#Heatmap(csSigs, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "Cancer-specific signatures")
+ggplot(dtExposedSamples2) +
+    geom_col(aes(x = signatureID,y = Samples, fill = Cancer)) +
+    #scale_x_log10() + 
+    scale_fill_manual(values = vCols) +
+    theme_bw() +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          legend.position = "none") +
+    ylab("Count") + 
+    ggtitle("Frequency of signature exposure") +
+    guides(fill = guide_legend(ncol= 2)) +
+    facet_wrap(vars(Cancer),scales = "free")
 ```
 
 ```{r combine_pc_cs_tcga_6335_oldSigs,message=FALSE}
@@ -682,30 +705,228 @@ oldSigDefs <- CINSignatureQuantification::Drews2022_TCGA_Signatures
 Heatmap(oldSigDefs, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "Drews 2022 signatures",name="weight")
 ```
 
-```{r combine_pc_cs_tcga_6335_compSigsDefs}
-compOldNewCosine <- cosine(t(rbind(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC)))
-compOldNewCosineFilt <- compOldNewCosine[,!colnames(compOldNewCosine) %in% paste0("CX",seq_len(17))]
-compOldNewCosineFilt <- compOldNewCosineFilt[rownames(compOldNewCosineFilt) %in% paste0("CX",seq_len(17)),]
+## New 17 linearly independent 
 
-compOldNewCosineFiltThresh <- compOldNewCosineFilt
-Heatmap(compOldNewCosineFiltThresh, cluster_columns = F, cluster_rows = FALSE,
-        column_title = "Signature definition comparison (no threshold)",name = "cosine sim")
+```{r combine_pc_cs_tcga_6335_filtSigs_default17}
+# Previous cosine threshold of 0.74 resulted in 19 signatures being retained after PC-CS and CS-CS filtering
+# Dropping the threshold to 0.72 returned 17 signature definitions.
 
-compOldNewCosineFiltThresh[compOldNewCosineFiltThresh < 0.72] = 0
-sum(apply(compOldNewCosineFiltThresh,MARGIN = 2,FUN = function(x) sum(any(x >= 0.72))))
-Heatmap(compOldNewCosineFiltThresh, cluster_columns = F, cluster_rows = FALSE,
-        column_title = "Signature definition comparison (cosine >= 0.72)",name = "cosine sim")
+filtMatAll17 = removePCSimilarSigs(matAll, COSINETHRESH = 0.72,PREFIXPCSIGS = "pan_cancer")
+dim(filtMatAll17)
 
-compOldNewCosineFiltThresh[compOldNewCosineFiltThresh < 0.90] = 0
-sum(apply(compOldNewCosineFiltThresh,MARGIN = 2,FUN = function(x) sum(any(x >= 0.90))))
-Heatmap(compOldNewCosineFiltThresh, cluster_columns = F, cluster_rows = FALSE,
-        column_title = "Signature definition comparison (cosine >= 0.90)",name = "cosine sim")
+csSigs17 = removeCSSimilarSigs(filtMatAll17, dtExposedSamples, COSINETHRESH = 0.72)
+dim(csSigs17)
 
-compOldNewCosineFiltThresh[compOldNewCosineFiltThresh < 0.95] = 0
-sum(apply(compOldNewCosineFiltThresh,MARGIN = 2,FUN = function(x) sum(any(x >= 0.95))))
-Heatmap(compOldNewCosineFiltThresh, cluster_columns = F, cluster_rows = FALSE,
-        column_title = "Signature definition comparison (cosine >= 0.95)",name = "cosine sim")
+matPCSC17 = rbind(pcSigs, csSigs17)
+dim(matPCSC17)
 
+Heatmap(matPCSC17, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "New pan-cancer signature compendium",name = "weight")
+
+pcvcsCorr17 <- cosine(t(matPCSC17))
+Heatmap(pcvcsCorr17,column_title = "PC vs CS linear dependence",name = "cosine sim",
+        cluster_columns = F, cluster_rows = FALSE,
+        cell_fun = function(j, i, x, y, w, h, col) {
+            if(round(pcvcsCorr17,digits = 2)[i, j] > 0.74){# add text to each grid
+        grid.text(round(pcvcsCorr17,digits = 2)[i, j], x, y)
+            }
+    })
+
+dtExposedSamples[rownames(dtExposedSamples) %in% rownames(matPCSC17),] %>%
+    rownames_to_column("signatureID") %>%
+    ggplot() +
+    geom_col(aes(x = signatureID,y = Samples, fill = Cancer)) +
+    #scale_x_log10() + 
+    scale_fill_manual(values = vCols) +
+    theme_bw() +
+    # theme(axis.text.x = element_blank(),
+    #       axis.ticks.x = element_blank(),
+    #       legend.position = "none") +
+    ylab("Count") + 
+    ggtitle("Frequency of signature exposure") +
+    guides(fill = guide_legend(ncol= 2))
+    #facet_wrap(vars(Cancer),scales = "free")
+```
+
+
+```{r combine_pc_cs_tcga_6335_compSigsDefs17}
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC17,
+                  threshold = 0,title = "Signature definition comparison (no threshold)")
+
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC17,
+                  threshold = 0.72,title = "Signature definition comparison (cosine >= 0.72)")
+
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC17,
+                  threshold = 0.90,title = "Signature definition comparison (cosine >= 0.90)")
+
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC17,
+                  threshold = 0.95,title = "Signature definition comparison (cosine >= 0.95)")
+```
+
+## New 19 linearly independent 
+
+```{r combine_pc_cs_tcga_6335_filtSigs_default19}
+# Previous cosine threshold of 0.74 resulted in 19 signatures being retained after PC-CS and CS-CS filtering
+
+filtMatAll19 = removePCSimilarSigs(matAll, COSINETHRESH = 0.74,PREFIXPCSIGS = "pan_cancer")
+dim(filtMatAll19)
+
+csSigs19 = removeCSSimilarSigs(filtMatAll19, dtExposedSamples, COSINETHRESH = 0.74)
+dim(csSigs19)
+
+matPCSC19 = rbind(pcSigs, csSigs19)
+dim(matPCSC19)
+
+Heatmap(matPCSC19, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "New pan-cancer signature compendium",name = "weight")
+
+pcvcsCorr19 <- cosine(t(matPCSC19))
+Heatmap(pcvcsCorr19,column_title = "PC vs CS linear dependence",name = "cosine sim",
+        cluster_columns = F, cluster_rows = FALSE,
+        cell_fun = function(j, i, x, y, w, h, col) {
+            if(round(pcvcsCorr19,digits = 2)[i, j] > 0.74){# add text to each grid
+        grid.text(round(pcvcsCorr19,digits = 2)[i, j], x, y)
+            }
+    })
+
+dtExposedSamples[rownames(dtExposedSamples) %in% rownames(matPCSC19),] %>%
+    rownames_to_column("signatureID") %>%
+    ggplot() +
+    geom_col(aes(x = signatureID,y = Samples, fill = Cancer)) +
+    #scale_x_log10() + 
+    scale_fill_manual(values = vCols) +
+    theme_bw() +
+    # theme(axis.text.x = element_blank(),
+    #       axis.ticks.x = element_blank(),
+    #       legend.position = "none") +
+    ylab("Count") + 
+    ggtitle("Frequency of signature exposure") +
+    guides(fill = guide_legend(ncol= 2))
+    #facet_wrap(vars(Cancer),scales = "free")
+```
+
+
+```{r combine_pc_cs_tcga_6335_compSigsDefs19}
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC19,
+                  threshold = 0,title = "Signature definition comparison (no threshold)")
+
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC19,
+                  threshold = 0.74,title = "Signature definition comparison (cosine >= 0.74)")
+
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC19,
+                  threshold = 0.90,title = "Signature definition comparison (cosine >= 0.90)")
+
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC19,
+                  threshold = 0.95,title = "Signature definition comparison (cosine >= 0.95)")
+```
+### keep all sigs
+
+```{r combine_pc_cs_tcga_6335_compSigsDefsall}
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matAll,
+                  threshold = 0,title = "Signature definition comparison (no threshold)")
+
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matAll,
+                  threshold = 0.74,title = "Signature definition comparison (cosine >= 0.74)")
+
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matAll,
+                  threshold = 0.90,title = "Signature definition comparison (cosine >= 0.90)")
+
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matAll,
+                  threshold = 0.95,title = "Signature definition comparison (cosine >= 0.95)")
+```
+
+```{r manual_curation_sig_defs_tcga_6335}
+compOldNewCosineFiltThreshAll <- cosine(t(rbind(CINSignatureQuantification::Drews2022_TCGA_Signatures,matAll)))
+compOldNewCosineFiltThreshAll <- compOldNewCosineFiltThreshAll[,!colnames(compOldNewCosineFiltThreshAll) %in% paste0("CX",seq_len(17))]
+compOldNewCosineFiltThreshAll <- compOldNewCosineFiltThreshAll[rownames(compOldNewCosineFiltThreshAll) %in% paste0("CX",seq_len(17)),]
+sigList <- apply(compOldNewCosineFiltThreshAll,MARGIN = 1,FUN = function(x) sort(x[which(x >= 0.74)],decreasing = T))
+
+# If pan_cancer then select pan_cancer else take highest CS
+sigListFilt <- lapply(sigList,FUN = function(x){
+    n <- names(x)
+    if(any(grepl(x = names(x),pattern = "pan_cancer*",perl = T))){
+        y <- x[grep(x = names(x),pattern = "pan_cancer*",perl = T)]
+        s <- y[which(max(y) == y)]
+    } else {
+        s <- x[which(max(x) == x)]
+    }
+    return(s)
+})
+
+sigName <- names(sigListFilt)
+names(sigListFilt) <- NULL
+sigListFiltNames <- names(unlist(sigListFilt))
+names(sigListFiltNames) <- sigName
+#sigListFiltNames
+
+## Direct intervention for CX15 and corresponding new sig as pan_cancer_W3 appeared twice
+#which(duplicated(sigListFiltNames))
+sigListFiltNames[which(duplicated(sigListFiltNames))] <- names(sigList[[which(duplicated(sigListFiltNames))]][1])
+
+compOldNewCosineFiltThreshAll_sub <- compOldNewCosineFiltThreshAll[,sigListFiltNames]
+
+all(paste0("pan_cancer_W",seq_len(10)) %in% colnames(compOldNewCosineFiltThreshAll_sub))
+```
+
+```{r manual_curation_selection_vis_tcga_6335}
+selectedList <- data.frame(old=sigName,new=sigListFiltNames,selected=rep("selected",times=length(sigName)))
+
+as.data.frame(compOldNewCosineFiltThreshAll_sub) %>%
+    rownames_to_column("old_signature") %>%
+    pivot_longer(cols = 2:ncol(.),names_to = "new_signature",values_to = "cosineSim") %>%
+    left_join(.,selectedList,by = c("old_signature"="old","new_signature"="new")) %>%
+    filter(cosineSim != 0) %>%
+    mutate("old_signature" = factor(old_signature,levels=stringr::str_sort(sigName,numeric = T))) %>%
+    ggplot() +
+    geom_col(aes(new_signature,cosineSim,fill=selected)) +
+    facet_wrap(. ~ old_signature,ncol = 3) +
+    theme(axis.text.x = element_text(angle = 180)) +
+    theme_bw()
+
+Heatmap(compOldNewCosineFiltThreshAll_sub, cluster_columns = F, cluster_rows = FALSE,
+        column_title = "Signature definition comparison (cosine >= 0.74)",name = "cosine sim",
+        cell_fun = function(j, i, x, y, w, h, col) {
+            if(round(compOldNewCosineFiltThreshAll_sub,digits = 2)[i, j] > 0){# add text to each grid
+        grid.text(round(compOldNewCosineFiltThreshAll_sub,digits = 2)[i, j], x, y)
+            }
+    })
+
+pcvcsCorr <- corMat[rownames(corMat) %in% selectedList$new,colnames(corMat) %in% selectedList$new]
+Heatmap(pcvcsCorr,column_title = "PC vs CS linear dependence",name = "cosine sim",
+        cluster_columns = F, cluster_rows = FALSE,
+        cell_fun = function(j, i, x, y, w, h, col) {
+            if(round(pcvcsCorr,digits = 2)[i, j] > 0.74){# add text to each grid
+        grid.text(round(pcvcsCorr,digits = 2)[i, j], x, y)
+            }
+    })
+
+dtExposedSamples[rownames(dtExposedSamples) %in% colnames(compOldNewCosineFiltThreshAll_sub),] %>%
+    rownames_to_column("signatureID") %>%
+    ggplot() +
+    geom_col(aes(x = signatureID,y = Samples, fill = Cancer)) +
+    #scale_x_log10() + 
+    scale_fill_manual(values = vCols) +
+    theme_bw() +
+    # theme(axis.text.x = element_blank(),
+    #       axis.ticks.x = element_blank(),
+    #       legend.position = "none") +
+    ylab("Count") + 
+    ggtitle("Frequency of signature exposure") +
+    guides(fill = guide_legend(ncol= 2))
+    #facet_wrap(vars(Cancer),scales = "free")
+```
+
+```{r newvsold_conpendium_tcga_6335,message=F}
+Heatmap(oldSigDefs, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "Drews 2022 signatures",name="weight")
+Heatmap(matAll[rownames(matAll) %in% colnames(compOldNewCosineFiltThreshAll_sub),],row_order = colnames(compOldNewCosineFiltThreshAll_sub), cluster_columns = FALSE, cluster_rows = FALSE, column_title = "New pan-cancer signature compendium",name = "weight")
+```
+
+```{r get_sig_acts_new_definitions}
+osCN_new_sxc <- readRDS("data/pan_new_oscn_mixture_tcga_SxC.rds")
+sigDef <- matAll[rownames(matAll) %in% colnames(compOldNewCosineFiltThreshAll_sub),]
+newActs_NewSig_NewMix <- CINSignatureQuantification:::calculateActivityDrewsV2(object = osCN_new_sxc,
+                                                      SIGS = matAll[rownames(matAll) %in% colnames(compOldNewCosineFiltThreshAll_sub),])
+
+lSigs <- t(apply(newActs_NewSig_NewMix,2,function(x) x/sum(x)))
+head(t(newActs_NewSig_NewMix))
 ```
 
 ```{r sessionInfo}
