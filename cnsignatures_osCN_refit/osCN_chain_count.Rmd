@@ -11,7 +11,7 @@ Issue opened on `CINSignatureQuantification` package identified a potential issu
 
 ## set up
 
-```{r libs}
+```{r libs,message=F}
 library(ggplot2)
 library(dplyr)
 library(tidyr)
@@ -23,7 +23,9 @@ library(igraph)
 library(qgraph)
 library(lsa)
 library(ggthemes)
-library(CINSignatureQuantification) # install getOS-count branch of packaged
+library(CINSignatureQuantification) # install getOS-count branch of package
+
+#devtools::load_all()
 ```
 
 ```{r funcs}
