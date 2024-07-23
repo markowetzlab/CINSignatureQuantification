@@ -25,7 +25,7 @@ library(lsa)
 library(ggthemes)
 library(CINSignatureQuantification) # install getOS-count branch of package
 
-#devtools::load_all()
+devtools::load_all(".")
 ```
 
 ```{r funcs}
@@ -577,7 +577,8 @@ if(!dir.exists(OUTPUTDIR)){
 
 ## Load list of NMF runs from results folder and plot histogram of optimal K values
 lResults = loadNMFresults(PATHTOFILES)
-plotHistOfKs(lResults$lData)
+plotHist <- plotHistOfKs(lResults$lData)
+plotHist
 ```
 
 ```{r select_pan_cancer_nmf_tcga_6335,warning=FALSE,message=FALSE}
@@ -1145,7 +1146,7 @@ suppressMessages(Heatmap(oldNewSigsCombinedMat,
                                        rep("new",nrow(group5))),
                          row_title_rot = 0,
                          cluster_columns = FALSE,
-                         cluster_rows = FALSE, column_title = "Combined signature compendium - For reference only",name = "weight"))
+                         cluster_rows = T, column_title = "Combined signature compendium - For reference only",name = "weight"))
 ```
 
 ```{r save_new_conpendium_tcga_6335}
@@ -1160,14 +1161,50 @@ if(!file.exists("data/new_pan_cancer_sig_definition_compendium_map_tcga_6335.rds
 
 ### Compute new activities
 
+#### ANALYSIS CHECKPOINT
+
+```{r libs2,message=F}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(tibble)
+library(data.table)
+library(ComplexHeatmap)
+library(ggplot2)
+library(igraph)
+library(qgraph)
+library(lsa)
+library(ggthemes)
+library(CINSignatureQuantification) # install getOS-count branch of package
+
+devtools::load_all(".")
+```
+
 Using newly implemented V2 function (temp implementation without dedicated data object loading) to compute new signature activities defined on new mixtures, SxC matrix, and ARD-NMF runs.
 
-```{r get_sig_acts_new_definitions}
+```{r get_sig_acts_new_definitions_loadData}
+osCN_new_feats <- CINSignatureQuantification::getFeatures(readRDS("data/tcga_6335_cnquant_newweights.rds"))
 osCN_new_sxc <- readRDS("data/pan_new_oscn_mixture_tcga_SxC.rds")
-sigDef <- readRDS("data/new_pan_cancer_sig_definition_compendium_tcga_6335.rds")
-newActs_NewSig_NewMix_noThresh <- CINSignatureQuantification:::calculateActivityDrewsV2(object = osCN_new_sxc,SIGS = sigDef)
+osCN_new_models <- CINSignatureQuantification::Drews2022_v2_TCGA_Mixture_Models
+osCN_new_sigDef <- readRDS("data/new_pan_cancer_sig_definition_compendium_tcga_6335.rds")
+```
+
+```{r get_sig_acts_new_definitions_generateSigs}
+newActs_NewSig_NewMix_noThresh <- CINSignatureQuantification:::calculateActivityDrewsV2(object = osCN_new_sxc,SIGS = osCN_new_sigDef)
 normaliseNewActs_NewSig_NewMix_noThresh <- t(apply(newActs_NewSig_NewMix_noThresh,2,function(x) x/sum(x)))
 head(normaliseNewActs_NewSig_NewMix_noThresh)
+```
+
+```{r estimate_sig_thresholds_tcga_6335_sig19}
+new_sig19_tcga_thresholds <- estimateThresholds(feats = osCN_new_feats,
+                                                sigDefs = osCN_new_sigDef,
+                                                sigActs = normaliseNewActs_NewSig_NewMix_noThresh,
+                                                mixtures = osCN_new_models,
+                                                iters = 20,method = "drewsV2",cores = 10)
+
+if(!file.exists("data/new_sig19_tcga_thresholds.rds")){
+    saveRDS(new_sig19_tcga_thresholds,file = "data/new_sig19_tcga_thresholds.rds")
+}
 ```
 
 ```{r sessionInfo}
