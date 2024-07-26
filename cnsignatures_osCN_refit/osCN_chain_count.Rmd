@@ -1105,6 +1105,7 @@ as.data.frame(compOldNewCosineFiltThreshAll_sub) %>%
     theme(axis.text.x = element_text(angle = 180)) +
     theme_bw()
 ```
+
 ## Selection of signature definition
 
 In order to remain agnostic to previous solutions, it was elected to use the unaltered version of the selection method.
@@ -1200,7 +1201,7 @@ new_sig19_tcga_thresholds <- estimateThresholds(feats = osCN_new_feats,
                                                 sigDefs = osCN_new_sigDef,
                                                 sigActs = normaliseNewActs_NewSig_NewMix_noThresh,
                                                 mixtures = osCN_new_models,
-                                                iters = 20,method = "drewsV2",cores = 10)
+                                                iters = 5,method = "drewsV2",cores = 10)
 
 if(!file.exists("data/new_sig19_tcga_thresholds.rds")){
     saveRDS(new_sig19_tcga_thresholds,file = "data/new_sig19_tcga_thresholds.rds")
