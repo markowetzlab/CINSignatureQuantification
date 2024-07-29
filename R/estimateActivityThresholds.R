@@ -2,29 +2,27 @@
 library(mclust)
 estimateThresholds <- function(feats=NULL,sigDefs=NULL,sigActs=NULL,mixtures=NULL,
                                iters=1000,SDPROP = 20,FINALWIDTH = 0.1,RANGECNAS = 0.1,
-                               UNINFPRIOR = TRUE,method="drewsV2",minmaxNorm=FALSE,orderOri=FALSE,cores=1){
+                               UNINFPRIOR = TRUE,method="drewsV2",minmaxNorm=FALSE,orderOri=FALSE,parallel=FALSE){
     if(is.null(feats)){
         stop("no data")
     }
     if(iters < 2){
         stop("require at least 2 iterations")
     }
-    if(cores > 1) {
-        if (!requireNamespace("doParallel", quietly = TRUE)) {
+    if(parallel) {
+        if (!requireNamespace("doFuture", quietly = TRUE)) {
             stop(
-                "Package \"doParallel\" must be installed to use multiple threads/cores.",
+                "Package \"doFuture\" must be installed to use multiple threads/cores.",
                 call. = FALSE
             )
         }
 
-        # Multi-core usage
+        message(paste0("running doFuture foreach for ",iters," iterations"))
+        # Multi-thread usage
         `%dofuture%` <- doFuture::`%dofuture%`
-        future::plan("multicore", workers = cores)
-        i <- NULL
-        p <- progressr::progressor(along = 1:iters)
-        lActsList <- foreach::foreach(i=1:iters) %dofuture% {
+        lActsList <- foreach::foreach(i=1:iters,.options.future = list(seed = TRUE,packages = c("CINSignatureQuantification"))) %dofuture% {
             #message(paste0("Noise sim iteration ",i," of ",iters))
-            lFeatures <- simulateFeatureNoise(feats=feats,SDPROP=SDPROP,FINALWIDTH=FINALWIDTH,RANGECNAS=RANGECNAS)
+            lFeatures <- CINSignatureQuantification:::simulateFeatureNoise(feats=feats,SDPROP=SDPROP,FINALWIDTH=FINALWIDTH,RANGECNAS=RANGECNAS)
             switch(method,
                    drews={
                        lSxC <- calculateSampleByComponentMatrixDrews(brECNF = lFeatures,
@@ -33,13 +31,12 @@ estimateThresholds <- function(feats=NULL,sigDefs=NULL,sigActs=NULL,mixtures=NUL
                        lActs = t(apply(acts, 2, function(x) x/sum(x)))
                    },
                    drewsV2={
-                       lSxC <- calculateSampleByComponentMatrixDrewsV2(brECNF = lFeatures,
+                       lSxC <- CINSignatureQuantification:::calculateSampleByComponentMatrixDrewsV2(brECNF = lFeatures,
                                                                        UNINFPRIOR = TRUE)$sampleByComponent
                        ## to be changed once V2 is updated with new definitions
                        acts <- CINSignatureQuantification:::calculateActivityDrewsV2(object = lSxC,SIGS = sigDefs)
                        lActs = t(apply(acts, 2, function(x) x/sum(x)))
                    })
-            p(sprintf("x=%g", i))
             list(lActs)
         }
         #doParallel::stopImplicitCluster()
@@ -68,6 +65,7 @@ estimateThresholds <- function(feats=NULL,sigDefs=NULL,sigActs=NULL,mixtures=NUL
     }
     thresholdTab <- calculateThresholds(lSignatures = lActsList,originalActivities = sigActs,
                         minmaxNorm = minmaxNorm,orderOri = orderOri)
+    thresholdTab <- thresholdTab[rownames(sigDefs),]
     return(thresholdTab)
 }
 

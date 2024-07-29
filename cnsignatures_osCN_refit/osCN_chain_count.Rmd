@@ -393,6 +393,12 @@ colCompare
 if(!file.exists("data/tcga_6335_cnquant_newweights.rds")){
     saveRDS(tcga_6335_cnquant_newweights,"data/tcga_6335_cnquant_newweights.rds")
 }
+if(!file.exists("data/tcga_6335_feats_newweights.rds")){
+    saveRDS(tcga_6335_feats_newweights ,"data/tcga_6335_feats_newweights.rds")
+}
+if(!file.exists("data/tcga_6335_mixture_newweights.rds")){
+    saveRDS(tcga_6335_mixture_newweights,"data/tcga_6335_mixture_newweights.rds")
+}
 if(!file.exists("data/pan_new_oscn_mixture_tcga_SxC.rds")){
     saveRDS(osCN_new_sxc,"data/pan_new_oscn_mixture_tcga_SxC.rds")
 }
@@ -1164,7 +1170,7 @@ if(!file.exists("data/new_pan_cancer_sig_definition_compendium_map_tcga_6335.rds
 
 #### ANALYSIS CHECKPOINT
 
-```{r libs2,message=F}
+```{r libs2,message=F,warning=F}
 library(ggplot2)
 library(dplyr)
 library(tidyr)
@@ -1184,27 +1190,35 @@ devtools::load_all(".")
 Using newly implemented V2 function (temp implementation without dedicated data object loading) to compute new signature activities defined on new mixtures, SxC matrix, and ARD-NMF runs.
 
 ```{r get_sig_acts_new_definitions_loadData}
-osCN_new_feats <- CINSignatureQuantification::getFeatures(readRDS("data/tcga_6335_cnquant_newweights.rds"))
+osCN_new_feats <- readRDS("data/tcga_6335_feats_newweights.rds")
 osCN_new_sxc <- readRDS("data/pan_new_oscn_mixture_tcga_SxC.rds")
-osCN_new_models <- CINSignatureQuantification::Drews2022_v2_TCGA_Mixture_Models
+osCN_new_models <- readRDS("data/tcga_6335_mixture_newweights.rds")
 osCN_new_sigDef <- readRDS("data/new_pan_cancer_sig_definition_compendium_tcga_6335.rds")
 ```
 
 ```{r get_sig_acts_new_definitions_generateSigs}
-newActs_NewSig_NewMix_noThresh <- CINSignatureQuantification:::calculateActivityDrewsV2(object = osCN_new_sxc,SIGS = osCN_new_sigDef)
-normaliseNewActs_NewSig_NewMix_noThresh <- t(apply(newActs_NewSig_NewMix_noThresh,2,function(x) x/sum(x)))
+if(!file.exists("data/normaliseNewActs_NewSig_NewMix_noThresh.rds")){
+    newActs_NewSig_NewMix_noThresh <- CINSignatureQuantification:::calculateActivityDrewsV2(object = osCN_new_sxc,SIGS = osCN_new_sigDef)
+    normaliseNewActs_NewSig_NewMix_noThresh <- t(apply(newActs_NewSig_NewMix_noThresh,2,function(x) x/sum(x)))
+    saveRDS(normaliseNewActs_NewSig_NewMix_noThresh,"data/normaliseNewActs_NewSig_NewMix_noThresh.rds")
+} else {
+    normaliseNewActs_NewSig_NewMix_noThresh <- readRDS("data/normaliseNewActs_NewSig_NewMix_noThresh.rds")
+}
 head(normaliseNewActs_NewSig_NewMix_noThresh)
 ```
 
 ```{r estimate_sig_thresholds_tcga_6335_sig19}
-new_sig19_tcga_thresholds <- estimateThresholds(feats = osCN_new_feats,
+if(!file.exists("data/new_sig19_tcga_thresholds.rds")){
+    future::plan("multisession", workers = 10)
+    new_sig19_tcga_thresholds <- estimateThresholds(feats = osCN_new_feats,
                                                 sigDefs = osCN_new_sigDef,
                                                 sigActs = normaliseNewActs_NewSig_NewMix_noThresh,
                                                 mixtures = osCN_new_models,
-                                                iters = 5,method = "drewsV2",cores = 10)
-
-if(!file.exists("data/new_sig19_tcga_thresholds.rds")){
+                                                iters = 1000,method = "drewsV2",parallel = TRUE)
     saveRDS(new_sig19_tcga_thresholds,file = "data/new_sig19_tcga_thresholds.rds")
+    future::plan("sequential")
+} else {
+    new_sig19_tcga_thresholds <- readRDS("data/new_sig19_tcga_thresholds.rds")
 }
 ```
 
