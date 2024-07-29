@@ -8,7 +8,12 @@ setMethod("calculateSampleByComponentMatrix",
               }
               if(is.null(method)){
                 method <- getExperiment(object)@feature.method
+              } else if(method != getExperiment(object)@feature.method){
+                  featMethod <- getExperiment(object)@feature.method
+                  sxcMethodStop <- paste0("provided method different to feature method - provided: ",method," | feature method: ",featMethod)
+                  stop(sxcMethodStop)
               }
+
               switch(method,
                      mac={
                          sxc <- calculateSampleByComponentMatrixMac(object@featData,
