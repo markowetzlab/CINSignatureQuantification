@@ -20,6 +20,8 @@ estimateThresholds <- function(feats=NULL,sigDefs=NULL,sigActs=NULL,mixtures=NUL
         message(paste0("running doFuture foreach for ",iters," iterations"))
         # Multi-thread usage
         `%dofuture%` <- doFuture::`%dofuture%`
+        # provide progressr call if wanted
+        p <- progressr::progressor(steps = iters)
         lActsList <- foreach::foreach(i=1:iters,.options.future = list(seed = TRUE,packages = c("CINSignatureQuantification"))) %dofuture% {
             #message(paste0("Noise sim iteration ",i," of ",iters))
             lFeatures <- CINSignatureQuantification:::simulateFeatureNoise(feats=feats,SDPROP=SDPROP,FINALWIDTH=FINALWIDTH,RANGECNAS=RANGECNAS)
@@ -37,6 +39,8 @@ estimateThresholds <- function(feats=NULL,sigDefs=NULL,sigActs=NULL,mixtures=NUL
                        acts <- CINSignatureQuantification:::calculateActivityDrewsV2(object = lSxC,SIGS = sigDefs)
                        lActs = t(apply(acts, 2, function(x) x/sum(x)))
                    })
+            # progressr iter call
+            p(sprintf("i=%g", i))
             list(lActs)
         }
         #doParallel::stopImplicitCluster()
@@ -63,6 +67,7 @@ estimateThresholds <- function(feats=NULL,sigDefs=NULL,sigActs=NULL,mixtures=NUL
             lActsList <- append(lActsList,list(lActs))
         }
     }
+    message(paste0("Computing thresholds from ",iters, " simulated Signature activities"))
     thresholdTab <- calculateThresholds(lSignatures = lActsList,originalActivities = sigActs,
                         minmaxNorm = minmaxNorm,orderOri = orderOri)
     thresholdTab <- thresholdTab[rownames(sigDefs),]
