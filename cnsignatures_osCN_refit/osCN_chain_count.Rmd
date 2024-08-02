@@ -23,6 +23,7 @@ library(igraph)
 library(qgraph)
 library(lsa)
 library(ggthemes)
+library(ggalluvial)
 library(CINSignatureQuantification) # install getOS-count branch of package
 
 devtools::load_all(".")
@@ -560,16 +561,135 @@ names(splitSxC)
 
 ARD-NMF, as implemented in the SignatureAnalyzer-GPU python library was performed as described in the Drews publication using the exact same parameters. Only deviation was the strict use of 200 runs per CxS matrix, rather than 194 and several values close to that number for unknown reasons. The code was implemented on the CRUK CI slurm cluster on CUDA-enabled GPUs. R-based implementation has been constructed that could be feasibly used in this document but has not yet been properly incorporated into the package codebase. Results from the ARD-NMF runs are output to the `nmfruns/results/` sub directory and contains all output matrices and logs for each 200 runs per cancer type and pan-cancer CxS matrix.
 
+The following code would emulate this process in R but has a long execution time so is not evaluated
+
+```{r run_nmf_pan_cs_groups_pseudo,eval=FALSE}
+## Pan-cancer
+# Run GPU-accelerated ARD-NMF via reticulate and a pre-defined conda env
+osCN_new_cxs_nmf <- CINSignatureQuantification:::calculateArdNMF(data = osCN_new_cxs,runs = 200,max_iter = 1000)
+# From available solutions select the modal k value returned as number of correct signatures using beta_div metric
+osCN_new_cxs_nmf_best <- CINSignatureQuantification:::choose_ard_nmf(osCN_new_cxs_nmf,method = "modal",decision = "bdiv")
+
+## Cancer-specific (n > 100)
+# Same as pan-cancer but input is a cancer-specific CxS matrix
+cs_nmf_list <- list()
+for(i in names(splitSxC)){
+    y <- t(splitSxC[[i]])
+    yout <- CINSignatureQuantification:::calculateArdNMF(data = y,runs = 200,max_iter = 1000)
+    ybest <- CINSignatureQuantification:::choose_ard_nmf(yout,method = "modal",decision = "bdiv")
+    cs_nmf_list <- append(cs_nmf_list,list(ybest))
+}
+names(cs_nmf_list) <- names(splitSxC)
+```
+
 ## Assess ARD-NMF runs
 
-Here the selection of optimal ARD-NMF run and preferred k number of signatures are performed as per the publication.
+Load required functions for assessing NMF runs
 
 ```{r load_pan_cancer_nmf_tcga_6335_funs}
 ## Load existing functions used in the publication to assist in 
 source("2_Decide_signature_solution_functions.R")
 ```
 
-Get optimal ARD-NMF run for pan-cancer signature sets
+Get cancer-specific list and previously selected K
+
+```{r cs_nmf_tcga_6335_get_nsigs}
+## Small code snippet to capture the previously assigned optimal number of signatures from the publication and save the values to file
+if(!file.exists("data/cancer_specific_sigs.rds")){
+    cancer_specific_sigs <- do.call(rbind,lapply(list.files("../../CINSignatureDiscovery/Denovo_Signature_Discovery/",pattern = "4_",full.names = T),
+                                                FUN = function(x){data.frame(cancer=gsub(basename(x),pattern=".txt|4_Signatures_",replacement = ""),
+                                                                             sigs=ncol(data.frame(fread(x),row.names = 1)))}))
+    saveRDS(cancer_specific_sigs,file = "data/cancer_specific_sigs.rds")
+} else {
+    cancer_specific_sigs <- readRDS("data/cancer_specific_sigs.rds")
+}
+```
+
+### Using modal K-values
+
+Optimal ARD-NMF run selection process is applied to the cancer-specific NMF runs and uses modal K value from which to choose the best ARD-NMF run.
+
+```{r load_pan_cancer_nmf_tcga_6335_modal}
+## Define the input and output directories for ARD-NMF
+PATHTOFILES="nmfruns/results/BayesNMF_pan/"
+OUTPUTDIR_modal="nmfruns/solutions_modal/pan_cancer"
+
+## Generate output directory if missing
+if(!dir.exists(OUTPUTDIR_modal)){
+    dir.create(path = OUTPUTDIR_modal,recursive = T)
+}
+
+## Load list of NMF runs from results folder and plot histogram of optimal K values
+lResults_modal = loadNMFresults(PATHTOFILES)
+plotHist_modal <- plotHistOfKs(lResults_modal$lData)
+plotHist_modal
+```
+
+```{r select_pan_cancer_nmf_tcga_6335_modal,warning=FALSE,message=FALSE}
+## Modal K value is used regardless of match to publication
+OVERRIDEK_modal=FALSE
+thisK_modal = detK(lResults_modal$lData, OVERRIDEK=OVERRIDEK_modal)
+
+## Identify and extract optimal solution
+### fread outputs a bunch of column name warnings but does not seem to be an issue
+lOptimal_modal = idOptimalSolution(lResults_modal$lData, lResults_modal$allSamples, PATHTOFILES,
+                                   LOGPATTERN="log.txt", thisK = thisK_modal, DECISION="div", OUTPUTDIR=OUTPUTDIR_modal)
+bestSolution = lResults_modal$lData[[ lOptimal_modal$bestSample ]]
+bestPanSample_modal <- lOptimal_modal$bestSample
+
+## How close are the signatures of the same K?
+plotHeat1_modal = plotCosineHeat(lResults_modal$lData, lResults_modal$allSamples, thisK_modal)
+plotHeat1_modal
+## Plot hairball and heatmap with best solution
+plotSigs_modal = plotHairballAndHeatmap(lResults_modal$lData, lResults_modal$allSamples, lOptimal_modal$bestSample, lOptimal_modal$thisK)
+catchPlot_modal = ViewHairball(plotSigs_modal$hairball)
+
+#iewHairball(plotSigs$hairball)
+#### Combine plots into a pdf and move files from selection solution ("bestSolution") into a user-specified directory
+catchTrue = makeOutputFiles(OUTPUTDIR=OUTPUTDIR_modal, lOptimal_modal$bestSample, lOptimal_modal$thisK, plotHist=plotHist_modal, plotHeat1=plotHeat1_modal, plotSigs=plotSigs_modal, PATHTOFILES=PATHTOFILES)
+```
+
+
+```{r run_cs_nmf_tcga_6335_solutions_modal,warning=FALSE,message=FALSE,fig.show='hide'}
+# Perform same optimal solution selection for each cancer-specific group as a loop using modal k
+for(i in cancer_specific_sigs$cancer){
+    cs <- i
+    
+    PATHTOFILES=paste0("nmfruns/results/BayesNMF_",cs,"/")
+    OUTPUTDIR_modal=paste0("nmfruns/solutions_modal/",cs,"_cancer")
+    
+    if(!dir.exists(OUTPUTDIR_modal)){
+        dir.create(path = OUTPUTDIR_modal,recursive = T)
+    }
+    
+    lResults_modal = loadNMFresults(PATHTOFILES)
+    #plotHistOfKs(lResults$lData)
+    
+    OVERRIDEK_modal=FALSE
+    print(c(cs,OVERRIDEK_modal))
+    thisK_modal = detK(lResults_modal$lData, OVERRIDEK=OVERRIDEK_modal)
+    ## Identify and extract optimal solution
+    lOptimal_modal = idOptimalSolution(lResults_modal$lData, lResults_modal$allSamples, PATHTOFILES,
+                                       LOGPATTERN="log.txt", thisK = thisK_modal, DECISION="div", OUTPUTDIR=OUTPUTDIR_modal)
+    
+    bestSolution = lResults_modal$lData[[ lOptimal_modal$bestSample ]]
+    
+    plotHist_modal = plotHistOfKs(lResults_modal$lData)
+    ## How close are the signatures of the same K?
+    plotHeat1_modal = plotCosineHeat(lResults_modal$lData, lResults_modal$allSamples, thisK_modal)
+    ## Plot hairball and heatmap with best solution
+    plotSigs_modal = plotHairballAndHeatmap(lResults_modal$lData, lResults_modal$allSamples, lOptimal_modal$bestSample, lOptimal_modal$thisK)
+    catchPlot_modal = ViewHairball(plotSigs_modal$hairball)
+    
+    #ViewHairball(plotSigs$hairball)
+    #### Combine plots into a pdf and move files from selection solution ("bestSolution") into a user-specified directory
+    catchTrue = makeOutputFiles(OUTPUTDIR=OUTPUTDIR_modal, lOptimal_modal$bestSample, lOptimal_modal$thisK, plotHist=plotHist_modal, plotHeat1=plotHeat1_modal, plotSigs=plotSigs_modal, PATHTOFILES=PATHTOFILES)
+}
+```
+
+### Using Drews K-values
+
+Get optimal ARD-NMF run for pan-cancer signature sets. Here the selection of optimal ARD-NMF run and preferred k number of signatures are performed as per the publication.
 
 ```{r load_pan_cancer_nmf_tcga_6335}
 ## Define the input and output directories for ARD-NMF
@@ -609,19 +729,8 @@ catchPlot = ViewHairball(plotSigs$hairball)
 #### Combine plots into a pdf and move files from selection solution ("bestSolution") into a user-specified directory
 catchTrue = makeOutputFiles(OUTPUTDIR=OUTPUTDIR, lOptimal$bestSample, lOptimal$thisK, plotHist=plotHist, plotHeat1=plotHeat1, plotSigs=plotSigs, PATHTOFILES=PATHTOFILES)
 ```
-The same optimal ARD-NMF run selection process is applied to the cancer-specific NMF runs and uses the previously selected optimal K value from which to choose the best ARD-NMF run.
 
-```{r cs_nmf_tcga_6335_get_nsigs}
-## Small code snippet to capture the previously assigned optimal number of signatures from the publication and save the values to file
-if(!file.exists("data/cancer_specific_sigs.rds")){
-    cancer_specific_sigs <- do.call(rbind,lapply(list.files("../../CINSignatureDiscovery/Denovo_Signature_Discovery/",pattern = "4_",full.names = T),
-                                                FUN = function(x){data.frame(cancer=gsub(basename(x),pattern=".txt|4_Signatures_",replacement = ""),
-                                                                             sigs=ncol(data.frame(fread(x),row.names = 1)))}))
-    saveRDS(cancer_specific_sigs,file = "data/cancer_specific_sigs.rds")
-} else {
-    cancer_specific_sigs <- readRDS("data/cancer_specific_sigs.rds")
-}
-```
+The same optimal ARD-NMF run selection process is applied to the cancer-specific NMF runs and uses the previously selected optimal K value from which to choose the best ARD-NMF run.
 
 ```{r run_cs_nmf_tcga_6335_solutions,warning=FALSE,message=FALSE,fig.show='hide'}
 # Perform same optimal solution selection for each cancer-specific group as a loop
@@ -661,23 +770,13 @@ for(i in cancer_specific_sigs$cancer){
 
 ## Combine pan-cancer and cancer-specific
 
-The full compendium of Pan-cancer and cancer-specific signatures contain many non-linearly independent signature definitions, overlapping component weights, and low activity sigantures.
-Here the full compendium is combined and reduced to a representative set of signatures by prioritising pan-cancer signatures (as they are defined on a larger subset) and identifying non-linearly dependent signatures across all cancer-specific signatures.
-
-```{r combine_pc_cs_tcga_6335_vars}
-## Load all the optimal solutions selected from ARD-NMF runs in previous steps for both pan-cancer and cancer-specific sets
-PANCANCERSIGS=paste0("nmfruns/solutions/pan_cancer/2_Signatures_",bestPanSample,"_normalised.rds")
-PANCANCEREXP=paste0("nmfruns/solutions/pan_cancer/2_Exposures_",bestPanSample,"_normalised.rds")
-PATHCANCERSPECIFIC="nmfruns/solutions"
-PATTERNSIGS="2_Signatures"
-PATTERNEXP="2_Exposures"
-
+```{r combine_pc_cs_funcs}
 ## The cosine similarity threshold was previously estimated from simulation data but was not re-run in this analysis 
 ## As such the same threshold is used to dictate if two signature definitions are linearly dependent or not
 COSINETHRESH=0.74
 
 CANCERCOLS="data/TCGA_colour_scheme.txt"
-OUTDIR="data/combined_sigs"
+OUTDIR="data/combined_sigs" # specified but not used
 
 # Minor loading of publication TCGA defined colour scheme
 cancerCols = read.table(CANCERCOLS, header = FALSE, comment.char = "|")
@@ -757,6 +856,117 @@ getSignatureMapping <- function(x1=NULL,x2=NULL,threshold=0.74,compGroup=paste0(
 
 ```
 
+### Modal k
+
+Here the full compendium is combined and reduced to a representative set of signatures by prioritising pan-cancer signatures (as they are defined on a larger subset) and identifying non-linearly dependent signatures across all cancer-specific signatures using modal k values for each signature set.
+
+```{r combine_pc_cs_tcga_6335_vars_modal}
+## Load all the optimal solutions selected from ARD-NMF runs in previous steps for both pan-cancer and cancer-specific sets
+PANCANCERSIGS_modal=paste0("nmfruns/solutions_modal/pan_cancer/2_Signatures_",bestPanSample_modal,"_normalised.rds")
+PANCANCEREXP_modal=paste0("nmfruns/solutions_modal/pan_cancer/2_Exposures_",bestPanSample_modal,"_normalised.rds")
+PATHCANCERSPECIFIC_modal="nmfruns/solutions_modal"
+PATTERNSIGS_modal="2_Signatures"
+PATTERNEXP_modal="2_Exposures"
+```
+
+```{r combine_pc_cs_tcga_6335_load_pc_modal}
+# read and verify pan-cancer sig defs and exposures/activities
+pcSigs_modal = readSigs(PANCANCERSIGS_modal, name = "pan_cancer")
+pcExp_modal = t(readExp(PANCANCEREXP_modal, name = "pan_cancer"))
+print(list(defs=head(pcSigs_modal,n = 10)[,1:9],acts=head(pcExp_modal,n = 10)))
+```
+
+```{r combine_pc_cs_tcga_6335_load_cs_modal}
+# Load all the selected Cancer-specific signatures dropping unneeded files
+allCSigFiles_modal = list.files( path = PATHCANCERSPECIFIC_modal, pattern = PATTERNSIGS_modal, full.names = TRUE,recursive = TRUE)
+allCSigFiles_modal = allCSigFiles_modal[ grep( "normalised", allCSigFiles_modal, invert = TRUE ) ]
+allCSigFiles_modal = allCSigFiles_modal[ grep( "pan_cancer", allCSigFiles_modal, invert = TRUE ) ]
+allCSigFiles_modal = allCSigFiles_modal[ grep( "not_used", allCSigFiles_modal, invert = TRUE ) ]
+allCSigFiles_modal = allCSigFiles_modal[ grep( "summary", allCSigFiles_modal, invert = TRUE ) ]
+lCSigs_modal = lapply(allCSigFiles_modal, function(thisFile) {
+    
+    thisName = basename(dirname(thisFile))
+    thisSig = readSigs(thisFile, name = thisName)
+    return(thisSig)
+    
+} )
+
+## Bind all CS signatures together and check dims
+dfCS_modal = do.call(rbind, lCSigs_modal)
+matAll_modal = as.matrix( rbind(dfCS_modal, pcSigs_modal) )
+head(matAll_modal)
+```
+
+```{r combine_pc_cs_tcga_6335_load_ce_modal}
+# oad all the selected Cancer-specific exposures
+allCExpFiles_modal = list.files( path = PATHCANCERSPECIFIC_modal, pattern = PATTERNEXP_modal, full.names = TRUE,recursive = TRUE)
+allCExpFiles_modal = allCExpFiles_modal[ grep( "normalised", allCExpFiles_modal ) ]
+allCExpFiles_modal = allCExpFiles_modal[ grep( "not_used", allCExpFiles_modal, invert = TRUE ) ]
+lCExp_modal = lapply(allCExpFiles_modal, function(thisFile) {
+    
+    thisName = basename(dirname(thisFile))
+    thisExp = t(readSigs(thisFile, name = thisName))
+    return(thisExp)
+    
+} )
+names(lCExp_modal) = basename(dirname(allCExpFiles_modal))
+head(lCExp_modal$BLCA_cancer)
+```
+
+```{r combine_pc_cs_tcga_6335_hairball_modal}
+## Combine all the signature defintions from both pan-cancer and CS and plot hairball
+outfileHairball = file.path(OUTDIR, paste0("0_Hairball_PC_and_CS_sigs_cosineSim"))
+plotHairball(matAll_modal, outfileHairball, numPCSigs = nrow(pcSigs_modal), corThreshold = COSINETHRESH, 
+             cancerCols = cancerCols, corMethod = "cosine", plot2File = FALSE)
+```
+
+```{r combine_pc_cs_tcga_6335_corHM_modal}
+## plot cosine similarity heatmap of all sigs
+corMat_modal = cosine(t(matAll_modal))
+Heatmap(corMat_modal, show_row_names = FALSE, show_column_names = FALSE, name = "Cosine_Sim")
+```
+
+```{r combine_pc_cs_tcga_6335_corFiltHM_modal}
+## plot cosine similarity heatmap of all sigs with a restriction on minimum similiarity
+corMatFilt_modal = corMat_modal
+corMatFilt_modal[ corMatFilt_modal < COSINETHRESH ] = 0
+Heatmap(corMatFilt_modal, show_row_names = FALSE, show_column_names = FALSE, name = "Cosine_Sim")
+```
+
+```{r combine_pc_cs_tcga_6335_sigExpCount_modal}
+## As a selection metric in CS signatures, the number of samples with activity/exposure above a threshold is computed
+dtExposedSamples_modal = samplesPerSignature(lCExp_modal,pcExp_modal, EXPTRESH = 0.05)
+
+dtExposedSamples2_modal <- rownames_to_column(dtExposedSamples_modal,var = "signatureID")
+
+## Plot of the number of samples with activity in a given signature set
+ggplot(dtExposedSamples2_modal) +
+    geom_col(aes(x = signatureID,y = Samples, fill = Cancer)) +
+    #scale_x_log10() + 
+    scale_fill_manual(values = vCols) +
+    theme_bw() +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          legend.position = "none") +
+    ylab("Count") + 
+    ggtitle("Frequency of signature exposure") +
+    guides(fill = guide_legend(ncol= 2)) +
+    facet_wrap(vars(Cancer),scales = "free")
+```
+
+### Pre-specified k
+
+The full compendium of Pan-cancer and cancer-specific signatures contain many non-linearly independent signature definitions, overlapping component weights, and low activity signatures. Here the full compendium is combined and reduced to a representative set of signatures by prioritising pan-cancer signatures (as they are defined on a larger subset) and identifying non-linearly dependent signatures across all cancer-specific signatures using pre-specified k values for each signature set.
+
+```{r combine_pc_cs_tcga_6335_vars}
+## Load all the optimal solutions selected from ARD-NMF runs in previous steps for both pan-cancer and cancer-specific sets
+PANCANCERSIGS=paste0("nmfruns/solutions/pan_cancer/2_Signatures_",bestPanSample,"_normalised.rds")
+PANCANCEREXP=paste0("nmfruns/solutions/pan_cancer/2_Exposures_",bestPanSample,"_normalised.rds")
+PATHCANCERSPECIFIC="nmfruns/solutions"
+PATTERNSIGS="2_Signatures"
+PATTERNEXP="2_Exposures"
+```
+
 ```{r combine_pc_cs_tcga_6335_load_pc}
 # read and verify pan-cancer sig defs and exposures/activities
 pcSigs = readSigs(PANCANCERSIGS, name = "pan_cancer")
@@ -814,7 +1024,6 @@ corMat = cosine(t(matAll))
 Heatmap(corMat, show_row_names = FALSE, show_column_names = FALSE, name = "Cosine_Sim")
 ```
 
-
 ```{r combine_pc_cs_tcga_6335_corFiltHM}
 ## plot cosine similarity heatmap of all sigs with a restriction on minimum similiarity
 corMatFilt = corMat
@@ -824,7 +1033,7 @@ Heatmap(corMatFilt, show_row_names = FALSE, show_column_names = FALSE, name = "C
 
 ```{r combine_pc_cs_tcga_6335_sigExpCount}
 ## As a selection metric in CS signatures, the number of samples with activity/exposure above a threshold is computed
-dtExposedSamples = samplesPerSignature(lCExp, EXPTRESH = 0.05)
+dtExposedSamples = samplesPerSignature(lCExp, pcExp,EXPTRESH = 0.05)
 
 dtExposedSamples2 <- rownames_to_column(dtExposedSamples,var = "signatureID")
 
@@ -842,12 +1051,85 @@ ggplot(dtExposedSamples2) +
     guides(fill = guide_legend(ncol= 2)) +
     facet_wrap(vars(Cancer),scales = "free")
 ```
-The original signature conpendium is plotted for reference
+#### Signature difference pre-specified vs modal k
 
-```{r combine_pc_cs_tcga_6335_oldSigs,message=FALSE,warning=FALSE}
-## For reference plot the original signature definitions
-oldSigDefs <- CINSignatureQuantification::Drews2022_TCGA_Signatures
-Heatmap(oldSigDefs, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "Drews 2022 signatures",name="weight")
+Comparing full signature sets between using previously specified k values for each signature subset versus taking the modal value for each signature subset there is the inclusion of one additional pan-cancer signature and one cancer-specific signature in the pre-specified K group.
+
+```{r compare_pres_vs_modal_fullsig}
+r <- rbind(pre=unlist(lapply(lCSigs,nrow)),modal=unlist(lapply(lCSigs_modal,nrow)))
+r <- cbind(c(dim(pcSigs)[1],dim(pcSigs_modal)[1]),r)
+colnames(r) <- c("pan",cancer_specific_sigs$cancer)
+r
+rownames(matAll)[which(!rownames(matAll) %in% rownames(matAll_modal))]
+```
+
+### Modal k default signature selection
+
+```{r combine_pc_cs_tcga_6335_filtSigs_default_modal,message=FALSE}
+## Filter signature compendium to removal all sigs similar to pc sigs
+filtMatAll_modal = removePCSimilarSigs(matAll_modal, COSINETHRESH = COSINETHRESH,PREFIXPCSIGS = "pan_cancer")
+dim(filtMatAll_modal)
+
+## Filter CS-sigs to remove all non-pan cancer sigs that are similar
+csSigs_modal = removeCSSimilarSigs(filtMatAll_modal, dtExposedSamples_modal, COSINETHRESH = 0.74)
+dim(csSigs_modal)
+
+## Bind PC and CS sigs
+matPCSC_modal = rbind(pcSigs_modal, csSigs_modal)
+dim(matPCSC_modal)
+
+## Heatmap plot of new set of signature definitions using publication methodology and outcome
+Heatmap(matPCSC_modal, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "New pan-cancer signature compendium",name = "weight")
+
+## Compute and plot intra-signature cosine similarity which shows all except PCw2 and PCW3 are independent at the given threshold
+pcvcsCorr_modal <- cosine(t(matPCSC_modal))
+Heatmap(pcvcsCorr_modal,column_title = "PC vs CS linear dependence",name = "cosine sim",
+        cluster_columns = F, cluster_rows = FALSE,
+        cell_fun = function(j, i, x, y, w, h, col) {
+            if(round(pcvcsCorr_modal,digits = 2)[i, j] > 0.74){# add text to each grid
+        grid.text(round(pcvcsCorr_modal,digits = 2)[i, j], x, y)
+            }
+    })
+
+## Plot of the number of samples with activity for given signature conpendium
+dtExposedSamples_modal[rownames(dtExposedSamples_modal) %in% rownames(matPCSC_modal),] %>%
+    rownames_to_column("signatureID") %>%
+    ggplot() +
+    geom_col(aes(x = signatureID,y = Samples, fill = Cancer)) +
+    #scale_x_log10() + 
+    scale_fill_manual(values = vCols) +
+    theme_bw() +
+    # theme(axis.text.x = element_blank(),
+    #       axis.ticks.x = element_blank(),
+    #       legend.position = "none") +
+    ylab("Count") + 
+    ggtitle("Frequency of signature exposure") +
+    guides(fill = guide_legend(ncol= 2))
+    #facet_wrap(vars(Cancer),scales = "free")
+```
+
+
+```{r combine_pc_cs_tcga_6335_compSigsDefs_modal}
+## No threshold
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC_modal,
+                  threshold = 0,title = "Signature definition comparison (no threshold)")
+
+## Designated threhsold from publication
+plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC_modal,
+                  threshold = 0.74,title = "Signature definition comparison (cosine >= 0.74)")
+matPCSC_modalmap <- getSignatureMapping(x1 = CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC_modal,threshold = 0.74)
+matPCSC_modalmap
+
+## Strict 0.90 cosine similiarity
+# plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC19,
+#                   threshold = 0.90,title = "Signature definition comparison (cosine >= 0.90)")
+# getSignatureMapping(x1 = CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC19,threshold = 0.90)
+
+## Strict 0.95 cosine similiarity
+# plotCosineHeatmap(CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC19,
+#                   threshold = 0.95,title = "Signature definition comparison (cosine >= 0.95)")
+# getSignatureMapping(x1 = CINSignatureQuantification::Drews2022_TCGA_Signatures,matPCSC19,threshold = 0.95)
+
 ```
 
 ### default signature selection 
@@ -923,7 +1205,7 @@ matPCSC19map
 
 ```
 
-## Conforming to 17 Sigantures
+### Conforming to 17 Sigantures
 
 The new selected signature compendium results in 19 signatures, a greater number than those previously described and several signatures from the original set are not represented with corresponding new signature definitions. The threshold on cosine similarity can be adjusted to return 17 signatures, matching the published number, but they do not map any better than the 19 signatures generated by replicating the exact methods in the publication without amendment and results in an increase of multiple mapping to original signatures. 
 
@@ -1114,15 +1396,25 @@ as.data.frame(compOldNewCosineFiltThreshAll_sub) %>%
 
 ## Selection of signature definition
 
-In order to remain agnostic to previous solutions, it was elected to use the unaltered version of the selection method.
+In order to remain agnostic to previous solutions, it was elected to use the unaltered version of the selection method with pre-specified k values (the **pre-specified k / original threshold** signature definition set).
+
+* modal k - Use of modally selected k values for optimal number of signatures per group resulted in 19 signatures (9 pan-cancer) which matches with the pre-specified k-value number but with a reduced pan-cancer representation. Additionally, this set had a poorer mapping to the original signatures, with a greater amount of signatures mapping to multiple original signatures compared to other definitions. Overall, the linear dependence was on par with the other groups which did not use manual mapping
+
+* **pre-specified k / original threshold** - Adjusting the optimal number of k signatures for both pan-cancer and BLCA cancer subtypes by an increment of 1 resulted in the same number of pan-cancer signatures as previously described and better mapping to original signature definitions. Linear independence across signature definitions was in line with both the modal k and threshold-adjusted implementation.
+
+* pre-specified k / adjusted threshold - Adjusting the cosine similarity threshold to 0.72 resulted in obtaining the same number of linearly independent signatures as the previous implementation in the Drews paper but resulted in higher number of multiple mappings between original and newly generated signature definitions compared to using the original threshold set.
+
+* pre-specified k / manual mapping - Lastly, adjusting the signature selection method to focus on singularly mapping new signature definitions to the previous definitions resulted in appreciably better correlations between the two sets but introduced a large amount of linear dependence between new signature definitions.
 
 ```{r newvsold_conpendium_tcga_6335,message=F}
 ## plot original and newly chosen signature compendium
-suppressMessages(Heatmap(oldSigDefs, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "Drews 2022 signatures",name="weight"))
-suppressMessages(Heatmap(matPCSC19, cluster_columns = FALSE, cluster_rows = FALSE, column_title = "New pan-cancer signature compendium",name = "weight"))
+suppressMessages(Heatmap(oldSigDefs, cluster_columns = FALSE,cluster_rows = FALSE, column_title = "Drews 2022 signatures",name="weight"))
+suppressMessages(Heatmap(matPCSC19, cluster_columns = FALSE,cluster_rows = FALSE, column_title = "New pan-cancer signature compendium",name = "weight"))
+```
 
+``````{r newvsold_conpendium_tcga_6335_combplot,message=F}
 ## By taking the mapping data matrix containing both mapped and unmapped signatures can be generated
-## This collectively plots component weights from both original and new signature defintions together
+## This collectively plots component weights from both original and new signature definitions together
 compNames <- colnames(matPCSC19)
 
 group1 <- matrix(rbind(t(matPCSC19[rownames(matPCSC19) %in% matPCSC19map$name[1:8],]),
@@ -1143,17 +1435,44 @@ rownames(group4) <- paste0(rownames(matPCSC19map[17,]))
 
 group5 <- matPCSC19[!rownames(matPCSC19) %in% matPCSC19map$name,]
 
-oldNewSigsCombinedMat <- rbind(group1,group2,group3,group4,group5)
+mapped_group <- rbind(group1,group3)
+original_group <- rbind(group2,group4)
+new_group <- group5
 
+oldNewSigsCombinedMat <- rbind(mapped_group,original_group,new_group)
+
+row_split <- c(rep("mapped",nrow(mapped_group)),rep("original",nrow(original_group)),rep("new",nrow(group5)))
 suppressMessages(Heatmap(oldNewSigsCombinedMat,
-                         row_split = c(rep("mapped_group1",nrow(group1)),
-                                       rep("original_group1",nrow(group2)),
-                                       rep("mapped_group2",nrow(group3)),
-                                       rep("original_group2",nrow(group4)),
-                                       rep("new",nrow(group5))),
+                         row_split = row_split,
                          row_title_rot = 0,
                          cluster_columns = FALSE,
                          cluster_rows = T, column_title = "Combined signature compendium - For reference only",name = "weight"))
+```
+
+```{r newvsold_conpendium_tcga_6335,message=F}
+mapping_alluvial <- matPCSC19map %>%
+    rownames_to_column("original") %>%
+    mutate(name = ifelse(cosineSim < 0.9,"",name)) %>%
+    mutate(cosineSim = ifelse(cosineSim < 0.9,"",cosineSim)) %>%
+    mutate(name = ifelse(name == "","old unmapped",name))
+
+missing_new <- sort(rownames(matPCSC19)[!rownames(matPCSC19) %in% mapping_alluvial$name])
+missing_new_tab <- cbind(original=rep("new unmapped",times = length(missing_new)),name=missing_new,cosineSim="")
+mapping_alluvial <- rbind(mapping_alluvial[,1:3],missing_new_tab)
+
+mapping_alluvial <- mapping_alluvial %>%
+        mutate(name = factor(name,levels=c(rownames(matPCSC19),"old unmapped"))) %>%
+        mutate(original = factor(original,levels=stringr::str_sort(unique(original),numeric = T)))
+
+ggplot(mapping_alluvial,aes(axis1=original,axis2=name)) +
+    geom_alluvium(aes(fill=as.numeric(cosineSim))) +
+    scale_fill_gradient2(mid="white", high="red",name = "cosine similarity",limits = c(0,1)) +
+    geom_stratum(width = 0.4, fill = "white") +
+    geom_text(stat = "stratum",size = 5, aes(label = after_stat(stratum))) +
+    theme_void() +
+    theme(legend.position = "bottom",
+          panel.grid = element_blank()) +
+    ggtitle(label = "Canonical alluvial mapping",subtitle = "one-to-one - Pre-specified K - Cosine threshold = 0.74")
 ```
 
 ```{r save_new_conpendium_tcga_6335}
@@ -1182,6 +1501,7 @@ library(igraph)
 library(qgraph)
 library(lsa)
 library(ggthemes)
+library(ggalluvial)
 library(CINSignatureQuantification) # install getOS-count branch of package
 
 devtools::load_all(".")
@@ -1220,6 +1540,82 @@ if(!file.exists("data/new_sig19_tcga_thresholds.rds")){
 } else {
     new_sig19_tcga_thresholds <- readRDS("data/new_sig19_tcga_thresholds.rds")
 }
+```
+
+```{r estimate_sig_thresholds_tcga_gold_sig19}
+## Use only the TCGA gold standard set to produce thresholds
+TCGA_GOLD_SAMPLES <- unique(TCGA_478_Samples_SNP6_GOLD$sample)
+osCN_new_feats_gold <- lapply(osCN_new_feats,FUN = function(x) x[x[,1] %in% TCGA_GOLD_SAMPLES,])
+normaliseNewActs_NewSig_NewMix_noThresh_gold <- normaliseNewActs_NewSig_NewMix_noThresh[rownames(normaliseNewActs_NewSig_NewMix_noThresh) %in% TCGA_GOLD_SAMPLES,]
+
+if(!file.exists("data/new_sig19_tcgaGOLD_thresholds.rds")){
+    future::plan("multisession", workers = 5)
+    new_sig19_tcgaGOLD_thresholds <- estimateThresholds(feats = osCN_new_feats_gold,
+                                                sigDefs = osCN_new_sigDef,
+                                                sigActs = normaliseNewActs_NewSig_NewMix_noThresh_gold,
+                                                mixtures = osCN_new_models,
+                                                iters = 1000,method = "drewsV2",parallel = TRUE)
+    saveRDS(new_sig19_tcgaGOLD_thresholds,file = "data/new_sig19_tcgaGOLD_thresholds.rds")
+    future::plan("sequential")
+} else {
+    new_sig19_tcgaGOLD_thresholds <- readRDS("data/new_sig19_tcgaGOLD_thresholds.rds")
+}
+```
+
+```{r compare_sig_act_thresholds_tcga_6335}
+# Publication and Drews method uses the 0.05/0.95 percentile as threshold for sigature activity
+Drews2022V2_TCGA_Signature_Thresholds <- new_sig19_tcga_thresholds[,"Thresh_ZeroGMM_0.05"]
+
+original_sig_thresholds <- Drews2022_TCGA_Signature_Thresholds
+
+## dput output from oldNewSigsCombinedMat to preserve checkpoint
+signames <- c("pan_cancer_W2", "CX1", "pan_cancer_W7", "CX2", "pan_cancer_W3", 
+"CX3", "pan_cancer_W6", "CX4", "pan_cancer_W9", "CX5", "pan_cancer_W5", 
+"CX6", "pan_cancer_W4", "CX7", "pan_cancer_W10", "CX8", "LIHC_cancer_W2", 
+"CX11", "pan_cancer_W8", "CX12", "pan_cancer_W1", "CX13", "GBM_cancer_W4", 
+"CX14", "GBM_cancer_W8", "CX15", "COAD_cancer_W5", "CX16", "CX9", 
+"CX10", "CX17", "CESC_cancer_W2", "UCEC_cancer_W3", "UCEC_cancer_W4", 
+"PRAD_cancer_W4", "HNSC_cancer_W3")
+
+## dput output from row_split to preserve checkpoint
+groupnames <- c("mapped", "mapped", "mapped", "mapped", "mapped", "mapped", 
+"mapped", "mapped", "mapped", "mapped", "mapped", "mapped", "mapped", 
+"mapped", "mapped", "mapped", "mapped", "mapped", "mapped", "mapped", 
+"mapped", "mapped", "mapped", "mapped", "mapped", "mapped", "mapped", 
+"mapped", "original", "original", "original", "new", "new", "new", 
+"new", "new")
+
+groupCols <- c(c(rbind(rep("new",14),rep("orig",14))),rep("orig",3),rep("new",5))
+
+threshold_map <- data.frame(signature=signames,
+           original_threshold=original_sig_thresholds[match(signames,names(original_sig_thresholds))],
+           new_threshold=Drews2022V2_TCGA_Signature_Thresholds[match(signames,names(Drews2022V2_TCGA_Signature_Thresholds))]) %>%
+    unite(value,original_threshold,new_threshold,na.rm = T,remove = T) %>%
+    mutate(value = as.numeric(value)) %>%
+    mutate(signature = factor(signature,levels = signames)) %>%
+    mutate(group = groupnames) %>%
+    mutate(groupCols = groupCols)
+
+ggplot(threshold_map) +
+    geom_crossbar(aes(x = signature,y = value,ymin = value,ymax = value,colour=groupCols)) +
+    facet_grid (.~ group, scales = "free_x", space = "free_x") +
+    #scale_y_continuous(labels = scales::percent) +
+    ggtitle("Signature activity threshold - Thresh_ZeroGMM_0.05") +
+    theme_bw() +
+    theme(axis.line = element_blank(), axis.ticks = element_line(size = 1),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+
+```{r apply_sig_act_thresholds_tcga_6335}
+ThreshNormaliseNewActs_NewSig_NewMix = sapply(names(Drews2022V2_TCGA_Signature_Thresholds), function(thisSig) {
+
+        sigVals = normaliseNewActs_NewSig_NewMix_noThresh[,thisSig]
+        sigVals[ sigVals < Drews2022V2_TCGA_Signature_Thresholds[thisSig] ] = 0
+
+        return(sigVals)
+    })
+
+sort(apply(ThreshNormaliseNewActs_NewSig_NewMix,MARGIN = 2,FUN = function(x) sum(x > 0) / length(x)),decreasing = T)
 ```
 
 ```{r sessionInfo}

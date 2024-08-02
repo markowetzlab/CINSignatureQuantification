@@ -18,9 +18,8 @@
 # python $SCRIPTPATH data $INPUTMATRIX max_iter=$MAXITER output_dir ${OUTPATH} $REGULARISATIONS labeled > ${OUTPATH}/${UUID}_log.txt &
 # Code here uses modified version of SignatureAnalyzer-GPU with modification to return data to R session rather than a flat file
 
-INPUTMATRIX <- "../SignatureAnalyzer-GPU/example_data/POLEMSI_counts_matrix.txt"
-tab <- as.data.frame(read.table("../SignatureAnalyzer-GPU/example_data/POLEMSI_counts_matrix.txt",header = T,sep = "\t",row.names = 1))
 
+## RETICULATE version 1.38
 calculateArdNMF <- function(data=NULL,runs=1,max_iter=10000,regularisation_W="L1",regularisation_H="L1",additional.args=NULL,cores=1){
     if (!requireNamespace("reticulate", quietly = TRUE)) {
         stop(
@@ -114,8 +113,6 @@ install_ardnmf <- function(envname = "r-ardnmf",
     reticulate::use_condaenv(envname)
 }
 
-out10 <- calculateArdNMF(data = tab,runs = 20,max_iter = 1000)
-
 choose_ard_nmf <- function(runs = NULL,method="modal",k=NULL,decision="bdiv",specificRun=NULL){
     if(is.null(runs)){
         stop("runs not specified")
@@ -185,6 +182,8 @@ select_optimal_k <- function(subrun=NULL,decision="bdiv"){
     return(best_run_name)
 }
 
-finalrun <- choose_ard_nmf(out10,method = "modal",decision = "bdiv")
-
-print(finalrun)
+# INPUTMATRIX <- "../SignatureAnalyzer-GPU/example_data/POLEMSI_counts_matrix.txt"
+# tab <- as.data.frame(read.table("../SignatureAnalyzer-GPU/example_data/POLEMSI_counts_matrix.txt",header = T,sep = "\t",row.names = 1))
+# finalrun <- choose_ard_nmf(out10,method = "modal",decision = "bdiv")
+#out10 <- calculateArdNMF(data = tab,runs = 20,max_iter = 1000)
+# print(finalrun)

@@ -104,7 +104,7 @@ plotHairball = function(matAll, outfile, numPCSigs, corThreshold = 0.90, cancerC
 }
 
 
-samplesPerSignature = function(lCExp, EXPTRESH = 0.05) {
+samplesPerSignature = function(lCExp,pcExp, EXPTRESH = 0.05) {
 
     ALLCANCERS=names(lCExp)
 
