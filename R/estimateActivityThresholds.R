@@ -1,14 +1,28 @@
-# estimateActivityThresholds
-library(mclust)
-estimateThresholds <- function(feats=NULL,sigDefs=NULL,sigActs=NULL,mixtures=NULL,
-                               iters=1000,SDPROP = 20,FINALWIDTH = 0.1,RANGECNAS = 0.1,
-                               UNINFPRIOR = TRUE,method="drewsV2",minmaxNorm=FALSE,orderOri=FALSE,parallel=FALSE){
-    if(is.null(feats)){
+#' estimateThresholds
+#'
+#' @param object An object of class SigQuant or PLACEHOLDERCLASS containing computed features, signature definitions, siganture activities, and feature mixture models.
+#' @param iters Number of noise simulation iterations to perform to estimate thresholds.
+#' @param method Feature and mixture model method to use for computing simulated features and signature activities
+#' @param parallel Use doFuture parallelisation to run iterations set by future::plan()
+#'
+#' @return data.frame containing series of signature-specific thresholds (Default used = Thresh_ZeroGMM_0.05)
+#' @import mclust
+#' @export estimateThresholds
+#'
+estimateThresholds <- function(object=NULL,iters=1000,SDPROP = 20,FINALWIDTH = 0.1,RANGECNAS = 0.1,
+                               method="drewsV2",minmaxNorm=FALSE,orderOri=FALSE,parallel=FALSE){
+    if(is.null(object)){
         stop("no data")
     }
     if(iters < 2){
         stop("require at least 2 iterations")
     }
+
+    feats <- object@featData
+    sigDefs <- object@backup.signatures
+    sigActs <- object@activities$normAct1
+    mixtures <- object@featFitting$model
+
     if(parallel) {
         if (!requireNamespace("doFuture", quietly = TRUE)) {
             stop(
@@ -24,44 +38,43 @@ estimateThresholds <- function(feats=NULL,sigDefs=NULL,sigActs=NULL,mixtures=NUL
         p <- progressr::progressor(steps = iters)
         lActsList <- foreach::foreach(i=1:iters,.options.future = list(seed = TRUE,packages = c("CINSignatureQuantification"))) %dofuture% {
             #message(paste0("Noise sim iteration ",i," of ",iters))
-            lFeatures <- CINSignatureQuantification:::simulateFeatureNoise(feats=feats,SDPROP=SDPROP,FINALWIDTH=FINALWIDTH,RANGECNAS=RANGECNAS)
+            lFeatures <- simulateFeatureNoise(feats=feats,SDPROP=SDPROP,FINALWIDTH=FINALWIDTH,RANGECNAS=RANGECNAS)
             switch(method,
                    drews={
                        lSxC <- calculateSampleByComponentMatrixDrews(brECNF = lFeatures,
                                                                      UNINFPRIOR = TRUE)$sampleByComponent
-                       acts <- CINSignatureQuantification:::calculateActivityDrews(object = lSxC)
+                       acts <- calculateActivityDrews(object = lSxC)
                        lActs = t(apply(acts, 2, function(x) x/sum(x)))
                    },
                    drewsV2={
-                       lSxC <- CINSignatureQuantification:::calculateSampleByComponentMatrixDrewsV2(brECNF = lFeatures,
+                       lSxC <- calculateSampleByComponentMatrixDrewsV2(brECNF = lFeatures,
                                                                        UNINFPRIOR = TRUE)$sampleByComponent
                        ## to be changed once V2 is updated with new definitions
-                       acts <- CINSignatureQuantification:::calculateActivityDrewsV2(object = lSxC,SIGS = sigDefs)
+                       acts <- calculateActivityDrewsV2(object = lSxC)
                        lActs = t(apply(acts, 2, function(x) x/sum(x)))
                    })
             # progressr iter call
             p(sprintf("i=%g", i))
             list(lActs)
         }
-        #doParallel::stopImplicitCluster()
     } else {
         lActsList <- list()
         for(i in 1:iters){
-            message(paste0("Noise sim iteration ",i," of ",iters))
+            message(paste0("running sequential iterations for  ",i," of ",iters," iterations"))
             lFeatures <- simulateFeatureNoise(feats=feats,SDPROP=SDPROP,FINALWIDTH=FINALWIDTH,RANGECNAS=RANGECNAS)
 
             switch(method,
                     drews={
                         lSxC <- calculateSampleByComponentMatrixDrews(brECNF = lFeatures,
                                                                       UNINFPRIOR = TRUE)$sampleByComponent
-                        acts <- CINSignatureQuantification:::calculateActivityDrews(object = lSxC)
+                        acts <- calculateActivityDrews(object = lSxC)
                         lActs = t(apply(acts, 2, function(x) x/sum(x)))
                     },
                     drewsV2={
                         lSxC <- calculateSampleByComponentMatrixDrewsV2(brECNF = lFeatures,
                                                                         UNINFPRIOR = TRUE)$sampleByComponent
                         ## to be changed once V2 is updated with new definitions
-                        acts <- CINSignatureQuantification:::calculateActivityDrewsV2(object = lSxC,SIGS = sigDefs)
+                        acts <- calculateActivityDrewsV2(object = lSxC)
                         lActs = t(apply(acts, 2, function(x) x/sum(x)))
             })
             lActsList <- append(lActsList,list(lActs))
@@ -156,7 +169,7 @@ addGaussianNoise <- function(dfFeat, sdProp = 20, finalWidth = NA) {
         dfFeat$redraw = abs(1-dfFeat$diff) > finalWidth
         while(sum(dfFeat$redraw) > 0) {
 
-            dfFeat$value2[dfFeat$redraw] = rnorm(n = length(dfFeat$value[dfFeat$redraw]),
+            dfFeat$value2[dfFeat$redraw] = stats::rnorm(n = length(dfFeat$value[dfFeat$redraw]),
                                                  mean = dfFeat$value[dfFeat$redraw],
                                                  sd = dfFeat$value[dfFeat$redraw]/sdProp)
             dfFeat$diff = dfFeat$value / dfFeat$value2
@@ -178,7 +191,7 @@ addGaussianNoise <- function(dfFeat, sdProp = 20, finalWidth = NA) {
 calculateThresholds <- function(lSignatures=NULL,originalActivities=NULL,minmaxNorm=FALSE,orderOri=FALSE) {
 
     # Bring list of signature activities into one data table
-    dtSigs <- data.table(formatSignatureList(lSignatures),stringsAsFactors = TRUE)
+    dtSigs <- data.table::data.table(formatSignatureList(lSignatures),stringsAsFactors = TRUE)
     siglevels <- stringr::str_sort(levels(factor(dtSigs$Var2)),numeric = T)
     dtSigs$Var2 <- factor(dtSigs$Var2,levels = siglevels)
 
@@ -198,7 +211,7 @@ calculateThresholds <- function(lSignatures=NULL,originalActivities=NULL,minmaxN
         if(orderOri) {
             newOrder = as.character(dtOriCS2$Var1[ order(dtOriCS2$value, decreasing = TRUE)])
         } else {
-            dtOrder = aggregate(value ~ Var1, dtCS2, median)
+            dtOrder = stats::aggregate(value ~ Var1, dtCS2, stats::median)
             newOrder = as.character(dtOrder$Var1[ order(dtOrder$value, decreasing = TRUE)])
         }
         # Reorder factors
@@ -233,8 +246,8 @@ calculateThresholds <- function(lSignatures=NULL,originalActivities=NULL,minmaxN
         gModel = mclust::Mclust(dat, modelNames = "V", G = 1, verbose = FALSE)
         modelMean = gModel$parameters$mean
         modelVar = gModel$parameters$variance$sigmasq
-        thresh3 = qnorm(0.95, mean = modelMean, sd = sqrt(modelVar), lower.tail = TRUE)
-        thresh4 = qnorm(0.99, mean = modelMean, sd = sqrt(modelVar), lower.tail = TRUE)
+        thresh3 = stats::qnorm(0.95, mean = modelMean, sd = sqrt(modelVar), lower.tail = TRUE)
+        thresh4 = stats::qnorm(0.99, mean = modelMean, sd = sqrt(modelVar), lower.tail = TRUE)
 
         return(c(thresh1, thresh2, thresh3, thresh4))
     })
@@ -268,21 +281,11 @@ formatSignatureList <- function(list){
 }
 
 q25 <- function(x){
-    quantile(x, probs = 0.25)
+    stats::quantile(x, probs = 0.25)
 }
 q75 <- function(x){
-    quantile(x, probs = 0.75)
+    stats::quantile(x, probs = 0.75)
 }
 q95 <- function(x){
-    quantile(x, probs = 0.95)
+    stats::quantile(x, probs = 0.95)
 }
-
-### INPUT vars
-# qSigs <- quantifyCNSignatures(TCGA_478_Samples_SNP6_GOLD,method = "drews",
-#                               build = "hg19",experimentName = "thresholds")
-# lOriECNF <- qSigs@featData
-# W <- qSigs@backup.signatures
-# lSigs <- qSigs@activities$normAct1
-# INPUTMODELS <- qSigs@featFitting$model
-#
-# thresholdActs <- estimateThresholds(feats = lOriECNF,sigDefs = W,sigActs = lSigs,mixtures = INPUTMODELS,iters = 50)

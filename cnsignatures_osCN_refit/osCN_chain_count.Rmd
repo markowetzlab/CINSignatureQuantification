@@ -22,69 +22,14 @@ library(ggplot2)
 library(igraph)
 library(qgraph)
 library(lsa)
+library(mclust)
 library(ggthemes)
 library(ggalluvial)
 library(CINSignatureQuantification) # install getOS-count branch of package
-
-devtools::load_all(".")
 ```
 
 ```{r funcs}
-# Extracted version of core component of osCN function with fix toggle
-# Loop over chromosomes to identify oscillation
-testOC <- function(segTab,usefix=FALSE){
-
-    samps = unique(segTab$sample)
-    chrs = unique(segTab$chromosome)
-    oscCounts = c()
-    for(i in samps) {
-
-        # Retrieve segments
-        #segTab = abs_profiles[[i]]
-        colnames(segTab)[4] = "segVal"
-
-        # Loop over chromosomes to identify oscillation
-        chrs = unique(segTab$chromosome)
-        oscCounts = c()
-        for(c in chrs) {
-
-            currseg = as.numeric(segTab$segVal[segTab$chromosome == c])
-            currseg = round(as.numeric(currseg))
-
-            # Only take chains into consideration with a length of more than 3 elements
-            if(length(currseg)>3) {
-                prevval = currseg[1]
-                count = 0
-                for(j in 3:length(currseg)) {
-                    if(currseg[j] == prevval & currseg[j] != currseg[j-1]) {
-                        count = count+1
-                        ## suggested fix for end of chromsome chain counts
-                        ## https://github.com/markowetzlab/CINSignatureQuantification/issues/22
-                        ## Included boolean to switch fix on and off
-                        if(usefix){
-                            if (j == length(currseg)) {
-                                oscCounts = c(oscCounts, count)
-                                count = 0
-                            }
-                        }
-                    } else {
-                        oscCounts = c(oscCounts,count)
-                        count = 0
-                    }
-                    prevval = currseg[j-1]
-                }
-            }
-        }
-
-    }
-    return(oscCounts)
-}
-
-reportChain <- function(x,y){
-    paste0(c("noFix = ","fix = "),
-       c(paste0(x,collapse = ""),
-       paste0(y,collapse = "")))
-}
+source("osCN_source_funcs.R")
 ```
 
 ## Preliminary count check
@@ -147,8 +92,8 @@ qSigs <- quantifyCNSignatures(TCGA_478_Samples_SNP6_GOLD,method = "drews",build 
 
 # Split segment table into list for direct feature extraction using newly adapted getOscillationDrewsV2 function
 TCGA_478_Samples_SNP6_GOLD_list <- split(TCGA_478_Samples_SNP6_GOLD,f = TCGA_478_Samples_SNP6_GOLD$sample)
-q_noFix <- CINSignatureQuantification:::getOscillationDrews(TCGA_478_Samples_SNP6_GOLD_list)
-q_Fix <- CINSignatureQuantification:::getOscillationDrewsV2(TCGA_478_Samples_SNP6_GOLD_list)
+q_noFix <- getOscillationDrews(TCGA_478_Samples_SNP6_GOLD_list)
+q_Fix <- getOscillationDrewsV2(TCGA_478_Samples_SNP6_GOLD_list)
 
 # adjustment to output type
 q_noFix$value <- as.numeric(q_noFix$value)
@@ -258,7 +203,7 @@ dim(existingFeats$osCN)
 
 ```{r recalc_osCN_original_func_tcga_6335}
 ## Original drews function to compute osCN using package functions
-osCN_nofix <- CINSignatureQuantification:::getOscillationDrews(segs)
+osCN_nofix <- getOscillationDrews(segs)
 dim(osCN_nofix)
 ```
 
@@ -269,7 +214,7 @@ all(existingFeats$osCN == osCN_nofix)
 
 ```{r calc_newfixed_osCN_tcga_6335}
 ## fixed osCN drews function with fix to compute osCN using package functions
-osCN_fix <- CINSignatureQuantification:::getOscillationDrewsV2(segs)
+osCN_fix <- getOscillationDrewsV2(segs)
 dim(osCN_fix)
 ```
 
@@ -282,7 +227,7 @@ osCN_original_pub_mixtureModel <- Drews2022_TCGA_Mixture_Models$osCN
 # Run Poisson mixture using same publication parameters 100 times and use modal k and BIC
 ## Rerun or load original re-implemented osCN feat mixture model
 if(!file.exists("data/osCN_noFix_mixtureModel_refitted.rds")){
-    osCN_noFix_mixtureModel <- CINSignatureQuantification:::fitMixturePois(osCN_nofix,seed = NULL,iters = 100,
+    osCN_noFix_mixtureModel <- fitMixturePois(osCN_nofix,seed = NULL,iters = 100,
                                                                            max_comp = 5,cores = 11)
     saveRDS(osCN_noFix_mixtureModel,file = "data/osCN_noFix_mixtureModel_refitted.rds")
 } else {
@@ -291,7 +236,7 @@ if(!file.exists("data/osCN_noFix_mixtureModel_refitted.rds")){
 
 # Rerun or load new fixed osCN feat mixture model
 if(!file.exists("data/osCN_Fix_mixtureModel_newlyfitted.rds")){
-    osCN_Fix_mixtureModel <- CINSignatureQuantification:::CINfitMixturePois(osCN_fix,seed = NULL,iters = 100,
+    osCN_Fix_mixtureModel <- fitMixturePois(osCN_fix,seed = NULL,iters = 100,
                                                                             max_comp = 5,cores = 11)
     saveRDS(osCN_Fix_mixtureModel,file = "data/osCN_Fix_mixtureModel_newlyfitted.rds")
 } else {
@@ -302,8 +247,8 @@ if(!file.exists("data/osCN_Fix_mixtureModel_newlyfitted.rds")){
 ```{r mean_and_weights_mixturemodelling_tcga_6335}
 # Compare mixture model means and weights from all versions of osCN mixtures
 ## extract mean and prior for both models from refitting runs
-osCN_noFix_mixtureModel_weights <- CINSignatureQuantification:::formatPoisModel(osCN_noFix_mixtureModel$model)
-osCN_Fix_mixtureModel_weights <- CINSignatureQuantification:::formatPoisModel(osCN_Fix_mixtureModel$model)
+osCN_noFix_mixtureModel_weights <- formatPoisModel(osCN_noFix_mixtureModel$model)
+osCN_Fix_mixtureModel_weights <- formatPoisModel(osCN_Fix_mixtureModel$model)
 
 ## save mixtures if newly computed
 if(!file.exists("data/osCN_oldrefittedVsnew_mixtures.rds")){
@@ -349,7 +294,7 @@ lapply(names(existingFeats),FUN = function(x){
 
 # Manually compute and add the SxC matrix from the old features and mixture models (avoiding wrapper functions in CINSignatureQuantification package)
 ## Verify the old mixture models were used
-tcga_6335_cnquant_oldweights@featFitting <- CINSignatureQuantification:::calculateSampleByComponentMatrixDrews(brECNF = tcga_6335_cnquant_oldweights@featData)
+tcga_6335_cnquant_oldweights@featFitting <- calculateSampleByComponentMatrixDrews(brECNF = tcga_6335_cnquant_oldweights@featData)
 tcga_6335_cnquant_oldweights@featFitting$model$osCN
 
 # Report dimensions and valdiate SxC from CNQuant object
@@ -368,7 +313,8 @@ osCN_fix$value <- as.numeric(osCN_fix$value)
 tcga_6335_cnquant_newweights@featData$osCN <- osCN_fix
 
 ## Compute the SxC matrix using the new implementation with fixed osCN and new mixture model and confirm new mixture used
-tcga_6335_cnquant_newweights@featFitting <- CINSignatureQuantification:::calculateSampleByComponentMatrixDrewsV2(brECNF = tcga_6335_cnquant_newweights@featData)
+tcga_6335_cnquant_newweights@featFitting <- calculateSampleByComponentMatrixDrewsV2(brECNF = tcga_6335_cnquant_newweights@featData,
+                                                                                    weights=Drews2022_v2_TCGA_Mixture_Models)
 tcga_6335_cnquant_newweights@featFitting$model$osCN
 ```
 
@@ -416,7 +362,8 @@ For validation, test outcome when using new mixture models on original osCN feat
 
 ```{r old_feats_new_weights_test}
 ## Compute SxC matrix using new V2 method which uses new mixtures and original version of input features 
-testsxc <- CINSignatureQuantification:::calculateSampleByComponentMatrixDrewsV2(brECNF = tcga_6335_cnquant_oldweights@featData)
+testsxc <- calculateSampleByComponentMatrixDrewsV2(brECNF = tcga_6335_cnquant_oldweights@featData,
+                                                                                weights=Drews2022_v2_TCGA_Mixture_Models)
 ## Extract the SxC
 testsxcm <- testsxc$sampleByComponent
 
@@ -505,36 +452,6 @@ These groups are then written to TSV file for use in non-incorporated stand alon
 meta.data <- read.table("data/Metadata_TCGA_ASCAT_penalty70.txt",header = T,sep = "\t")
 meta.data.filt <- meta.data[meta.data$dCIN,]
 
-## Define function to split the samples by dCIN+ cancer type
-splitSxCByGroup <- function(data=NULL,sampleCol="sample",group=NULL,groupdata=NULL,minsize=100){
-    if(is.null(data)){
-        stop("no data")
-    }
-    if(is.null(group)){
-        stop("no group")
-    }
-    if(is.null(groupdata)){
-        stop("no group data")
-    }
-    if(!all(c(sampleCol,group) %in% colnames(groupdata))){
-        stop("missing cols to split by group")
-    }
-    
-    subgroupdata <- groupdata[,c(sampleCol,group)]
-    sampsplit <- split(subgroupdata,f=subgroupdata[,group])
-    keepGroup <- unlist(lapply(sampsplit,FUN = function(x) nrow(x) >= minsize))
-    sampsplit <- sampsplit[keepGroup]
-    
-    splitsxc <- lapply(sampsplit,FUN = function(x){
-        sampleNames <- as.character(x[,sampleCol])
-        subsxc <- data[rownames(data) %in% sampleNames,]
-        return(subsxc)
-    })
-    
-    
-    return(splitsxc)
-}
-
 ## Split SxC into a list of cancer type specific sub matrices
 splitSxC <- splitSxCByGroup(osCN_new_sxc,sampleCol = "name",group = "cancer_type",groupdata = meta.data.filt)
 
@@ -559,37 +476,30 @@ names(splitSxC)
 
 ## Running ARD-NMF
 
-ARD-NMF, as implemented in the SignatureAnalyzer-GPU python library was performed as described in the Drews publication using the exact same parameters. Only deviation was the strict use of 200 runs per CxS matrix, rather than 194 and several values close to that number for unknown reasons. The code was implemented on the CRUK CI slurm cluster on CUDA-enabled GPUs. R-based implementation has been constructed that could be feasibly used in this document but has not yet been properly incorporated into the package codebase. Results from the ARD-NMF runs are output to the `nmfruns/results/` sub directory and contains all output matrices and logs for each 200 runs per cancer type and pan-cancer CxS matrix.
+ARD-NMF, as implemented in the SignatureAnalyzer-GPU python library was performed as described in the Drews publication using the same parameters. Only deviation was the strict use of 200 runs per CxS matrix, rather than 194 and several values close to that number for unknown reasons. The code was implemented on the CRUK CI slurm cluster on CUDA-enabled GPUs. R-based implementation has been constructed that could be feasibly used in this document but has not yet been properly incorporated into the package codebase. Results from the ARD-NMF runs are output to the `nmfruns/results/` sub directory and contains all output matrices and logs for each 200 runs per cancer type and pan-cancer CxS matrix.
 
 The following code would emulate this process in R but has a long execution time so is not evaluated
 
 ```{r run_nmf_pan_cs_groups_pseudo,eval=FALSE}
 ## Pan-cancer
 # Run GPU-accelerated ARD-NMF via reticulate and a pre-defined conda env
-osCN_new_cxs_nmf <- CINSignatureQuantification:::calculateArdNMF(data = osCN_new_cxs,runs = 200,max_iter = 1000)
+osCN_new_cxs_nmf <- CINSignatureQuantification::calculateArdNMF(data = osCN_new_cxs,runs = 200,max_iter = 1000)
 # From available solutions select the modal k value returned as number of correct signatures using beta_div metric
-osCN_new_cxs_nmf_best <- CINSignatureQuantification:::choose_ard_nmf(osCN_new_cxs_nmf,method = "modal",decision = "bdiv")
+osCN_new_cxs_nmf_best <- CINSignatureQuantification::choose_ard_nmf(osCN_new_cxs_nmf,method = "modal",decision = "bdiv")
 
 ## Cancer-specific (n > 100)
 # Same as pan-cancer but input is a cancer-specific CxS matrix
 cs_nmf_list <- list()
 for(i in names(splitSxC)){
     y <- t(splitSxC[[i]])
-    yout <- CINSignatureQuantification:::calculateArdNMF(data = y,runs = 200,max_iter = 1000)
-    ybest <- CINSignatureQuantification:::choose_ard_nmf(yout,method = "modal",decision = "bdiv")
+    yout <- CINSignatureQuantification::calculateArdNMF(data = y,runs = 200,max_iter = 1000)
+    ybest <- CINSignatureQuantification::choose_ard_nmf(yout,method = "modal",decision = "bdiv")
     cs_nmf_list <- append(cs_nmf_list,list(ybest))
 }
 names(cs_nmf_list) <- names(splitSxC)
 ```
 
 ## Assess ARD-NMF runs
-
-Load required functions for assessing NMF runs
-
-```{r load_pan_cancer_nmf_tcga_6335_funs}
-## Load existing functions used in the publication to assist in 
-source("2_Decide_signature_solution_functions.R")
-```
 
 Get cancer-specific list and previously selected K
 
@@ -783,77 +693,6 @@ cancerCols = read.table(CANCERCOLS, header = FALSE, comment.char = "|")
 vCols = as.character(cancerCols$V2)
 names(vCols) = cancerCols$V1
 vCols = c(vCols, "pan" = "#636363")
-
-## Load functions used to cull and select signature definitions
-source("51_Combine_PC_and_CS_Signatures_functions.R")
-
-## plotCosineHeatmap function
-plotCosineHeatmap <- function(x1=NULL,x2=NULL,title="",threshold=0.74,compGroup=paste0("CX",seq_len(17)),legTitle="cosine sim"){
-    if(is.null(x1)){
-        stop("no data")
-    }
-    if(is.null(x2)){
-        cosinex1x2 <- cosine(t(x1))
-    } else {
-        cosinex1x2 <- cosine(t(rbind(x1,x2)))
-    }
-    
-    cosinex1x2 <- cosinex1x2[,!colnames(cosinex1x2) %in% compGroup]
-    if(!is.null(x2)){
-        cosinex1x2 <- cosinex1x2[rownames(cosinex1x2) %in% compGroup,]
-    }
-    cosinex1x2[cosinex1x2 < threshold] = 0
-    Heatmap(cosinex1x2, cluster_columns = F, cluster_rows = FALSE,
-        column_title = title,name = legTitle,
-        cell_fun = function(j, i, x, y, w, h, col) {
-            if(round(cosinex1x2,digits = 2)[i, j] > threshold){# add text to each grid
-        grid.text(round(cosinex1x2,digits = 2)[i, j], x, y)
-            }
-    })
-}
-
-## getSignatureMapping function
-getSignatureMapping <- function(x1=NULL,x2=NULL,threshold=0.74,compGroup=paste0("CX",seq_len(17))){
-    if(is.null(x1)){
-        stop("no data")
-    }
-    if(is.null(x2)){
-        cosinex1x2 <- cosine(t(x1))
-    } else {
-        cosinex1x2 <- cosine(t(rbind(x1,x2)))
-    }
-    
-    cosinex1x2 <- cosinex1x2[,!colnames(cosinex1x2) %in% compGroup]
-    if(!is.null(x2)){
-        cosinex1x2 <- cosinex1x2[rownames(cosinex1x2) %in% compGroup,]
-    }
-    cosinex1x2[cosinex1x2 < threshold] = 0
-    
-    maps <- do.call(rbind,apply(cosinex1x2,MARGIN = 1,FUN = function(x){
-            if(any(x != 0)){
-                ym <- x[which(max(x) == x)]
-                nm <- names(ym)
-                vm <- as.vector(ym)
-                y <- x[which(x >= threshold)]
-                n <- names(y)[!names(y) %in% nm]
-                v <- as.vector(y[!y %in% ym])
-                o <- paste0(paste0(n," = ",v,collapse = ","))
-            } else {
-                nm <- ""
-                vm <- ""
-                o <- ""
-            }
-            d <- data.frame(name=nm,cosineSim=vm,otherMaps=o)
-            d$otherMaps[d$otherMaps == " = "] <- ""
-            return(d)
-        }))
-    dupnames <- maps$name[which(duplicated(maps$name))]
-    dupnames <- dupnames[dupnames != ""]
-    maps$multimap <- ifelse(maps$name %in% dupnames,TRUE,FALSE)
-
-    return(maps)
-}
-
 ```
 
 ### Modal k
@@ -1408,6 +1247,7 @@ In order to remain agnostic to previous solutions, it was elected to use the una
 
 ```{r newvsold_conpendium_tcga_6335,message=F}
 ## plot original and newly chosen signature compendium
+oldSigDefs <- CINSignatureQuantification::Drews2022_TCGA_Signatures
 suppressMessages(Heatmap(oldSigDefs, cluster_columns = FALSE,cluster_rows = FALSE, column_title = "Drews 2022 signatures",name="weight"))
 suppressMessages(Heatmap(matPCSC19, cluster_columns = FALSE,cluster_rows = FALSE, column_title = "New pan-cancer signature compendium",name = "weight"))
 ```
@@ -1485,9 +1325,11 @@ if(!file.exists("data/new_pan_cancer_sig_definition_compendium_map_tcga_6335.rds
 }
 ```
 
-### Compute new activities
+## Compute new activities
 
-#### ANALYSIS CHECKPOINT
+Newly selected signature definitions require generation of signature activities, implementation of new zero-activity thresholds, normalisation, scaling implementation, and comparisons to previously generated signature activities from the original osCN version. Here, a analysis checkpoint is implemented to allow for direct continuation from this point without running the prior analysis.
+
+## ANALYSIS CHECKPOINT
 
 ```{r libs2,message=F,warning=F}
 library(ggplot2)
@@ -1503,8 +1345,10 @@ library(lsa)
 library(ggthemes)
 library(ggalluvial)
 library(CINSignatureQuantification) # install getOS-count branch of package
+```
 
-devtools::load_all(".")
+```{r funcs2}
+source("osCN_source_funcs.R")
 ```
 
 Using newly implemented V2 function (temp implementation without dedicated data object loading) to compute new signature activities defined on new mixtures, SxC matrix, and ARD-NMF runs.
@@ -1514,11 +1358,14 @@ osCN_new_feats <- readRDS("data/tcga_6335_feats_newweights.rds")
 osCN_new_sxc <- readRDS("data/pan_new_oscn_mixture_tcga_SxC.rds")
 osCN_new_models <- readRDS("data/tcga_6335_mixture_newweights.rds")
 osCN_new_sigDef <- readRDS("data/new_pan_cancer_sig_definition_compendium_tcga_6335.rds")
+tcga_gold_orig_CNquant <- CINSignatureQuantification::quantifyCNSignatures(TCGA_478_Samples_SNP6_GOLD,method = "drews")
 ```
+
+Signature activities are computed using the new signature definitions described previously, after which the signature activities generated by least squares linear decomposition and normalised to values between 0 and 1 for each sample.
 
 ```{r get_sig_acts_new_definitions_generateSigs}
 if(!file.exists("data/normaliseNewActs_NewSig_NewMix_noThresh.rds")){
-    newActs_NewSig_NewMix_noThresh <- CINSignatureQuantification:::calculateActivityDrewsV2(object = osCN_new_sxc,SIGS = osCN_new_sigDef)
+    newActs_NewSig_NewMix_noThresh <- calculateActivityDrewsV2(object = osCN_new_sxc,SIGS = osCN_new_sigDef)
     normaliseNewActs_NewSig_NewMix_noThresh <- t(apply(newActs_NewSig_NewMix_noThresh,2,function(x) x/sum(x)))
     saveRDS(normaliseNewActs_NewSig_NewMix_noThresh,"data/normaliseNewActs_NewSig_NewMix_noThresh.rds")
 } else {
@@ -1526,6 +1373,10 @@ if(!file.exists("data/normaliseNewActs_NewSig_NewMix_noThresh.rds")){
 }
 head(normaliseNewActs_NewSig_NewMix_noThresh)
 ```
+
+### Compute signature thresholds
+
+For each given signature, an estimated threshold for determining zero activity for signature exposure. This estimates the signature activity at which a non-zero signature exposure is due to noise rather than signal from a given mutational process. This was performed as described in the Drews publication with functions refactored to allow for future implementation into the signature package. Here, noise is simulated on newly computed features, feature mixture models, and signature definitions to generate 1000 signature activity matrices over which several methods are applied to identify different signature-specific thresholds.
 
 ```{r estimate_sig_thresholds_tcga_6335_sig19}
 if(!file.exists("data/new_sig19_tcga_thresholds.rds")){
@@ -1540,10 +1391,13 @@ if(!file.exists("data/new_sig19_tcga_thresholds.rds")){
 } else {
     new_sig19_tcga_thresholds <- readRDS("data/new_sig19_tcga_thresholds.rds")
 }
+head(new_sig19_tcga_thresholds)
 ```
+The same process was applied to the TCGA gold standard set rather than the full TCGA 6335 sample set to compare threshold differences but were broadly the same. This code is not set to be evaluated as it is not of any further use downstream and thresholds from the full 6335 set are used. 
 
-```{r estimate_sig_thresholds_tcga_gold_sig19}
+```{r estimate_sig_thresholds_tcga_gold_sig19,eval=FALSE}
 ## Use only the TCGA gold standard set to produce thresholds
+## no reasonable difference so using full set of 6335 is preferable
 TCGA_GOLD_SAMPLES <- unique(TCGA_478_Samples_SNP6_GOLD$sample)
 osCN_new_feats_gold <- lapply(osCN_new_feats,FUN = function(x) x[x[,1] %in% TCGA_GOLD_SAMPLES,])
 normaliseNewActs_NewSig_NewMix_noThresh_gold <- normaliseNewActs_NewSig_NewMix_noThresh[rownames(normaliseNewActs_NewSig_NewMix_noThresh) %in% TCGA_GOLD_SAMPLES,]
@@ -1562,9 +1416,11 @@ if(!file.exists("data/new_sig19_tcgaGOLD_thresholds.rds")){
 }
 ```
 
+Newly computed thresholds are broadly consistent with the original thresholds for those signature definitions that mapped.
+
 ```{r compare_sig_act_thresholds_tcga_6335}
 # Publication and Drews method uses the 0.05/0.95 percentile as threshold for sigature activity
-Drews2022V2_TCGA_Signature_Thresholds <- new_sig19_tcga_thresholds[,"Thresh_ZeroGMM_0.05"]
+Drews2022_V2_TCGA_Signature_Thresholds <- new_sig19_tcga_thresholds[,"Thresh_ZeroGMM_0.05"]
 
 original_sig_thresholds <- Drews2022_TCGA_Signature_Thresholds
 
@@ -1589,7 +1445,7 @@ groupCols <- c(c(rbind(rep("new",14),rep("orig",14))),rep("orig",3),rep("new",5)
 
 threshold_map <- data.frame(signature=signames,
            original_threshold=original_sig_thresholds[match(signames,names(original_sig_thresholds))],
-           new_threshold=Drews2022V2_TCGA_Signature_Thresholds[match(signames,names(Drews2022V2_TCGA_Signature_Thresholds))]) %>%
+           new_threshold=Drews2022_V2_TCGA_Signature_Thresholds[match(signames,names(Drews2022_V2_TCGA_Signature_Thresholds))]) %>%
     unite(value,original_threshold,new_threshold,na.rm = T,remove = T) %>%
     mutate(value = as.numeric(value)) %>%
     mutate(signature = factor(signature,levels = signames)) %>%
@@ -1602,20 +1458,72 @@ ggplot(threshold_map) +
     #scale_y_continuous(labels = scales::percent) +
     ggtitle("Signature activity threshold - Thresh_ZeroGMM_0.05") +
     theme_bw() +
-    theme(axis.line = element_blank(), axis.ticks = element_line(size = 1),
+    theme(axis.line = element_blank(), axis.ticks = element_line(linewidth = 1),
         axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 ```
 
+### Thresholded signature activites
+
 ```{r apply_sig_act_thresholds_tcga_6335}
-ThreshNormaliseNewActs_NewSig_NewMix = sapply(names(Drews2022V2_TCGA_Signature_Thresholds), function(thisSig) {
+ThreshNormaliseNewActs_NewSig_NewMix = sapply(names(Drews2022_V2_TCGA_Signature_Thresholds), function(thisSig) {
 
         sigVals = normaliseNewActs_NewSig_NewMix_noThresh[,thisSig]
-        sigVals[ sigVals < Drews2022V2_TCGA_Signature_Thresholds[thisSig] ] = 0
+        sigVals[ sigVals < Drews2022_V2_TCGA_Signature_Thresholds[thisSig] ] = 0
 
         return(sigVals)
     })
 
-sort(apply(ThreshNormaliseNewActs_NewSig_NewMix,MARGIN = 2,FUN = function(x) sum(x > 0) / length(x)),decreasing = T)
+threshold_signature_order <- data.frame(prop_act=sort(apply(ThreshNormaliseNewActs_NewSig_NewMix,MARGIN = 2,FUN = function(x) sum(x > 0) / length(x)),decreasing = T)) %>%
+    rownames_to_column("signature") %>%
+    mutate(signature = factor(signature,levels=signature))
+
+ggplot(threshold_signature_order) +
+    geom_col(aes(signature,prop_act)) +
+    theme_bw() +
+    theme(axis.line = element_blank(), axis.ticks = element_line(linewidth = 1),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+Thresholded signature activities were computed across the TCGA gold standard set for both the original and new implementation of the signatures and cosine similarity between mapped signature definitions was performed to assess how well signature activities corresponed to one another after signature activity extraction.
+
+```{r tcga_gold_sig_acts}
+tcga_gold_orig <- getActivities(tcga_gold_orig_CNquant)
+tcga_gold_new <- ThreshNormaliseNewActs_NewSig_NewMix[rownames(ThreshNormaliseNewActs_NewSig_NewMix) %in% getSamples(tcga_gold_orig_CNquant),]
+
+oldNames <- signames[seq(2,28,2)]
+newNames <- signames[seq(1,28,2)]
+
+tcga_gold_orig_filt <- tcga_gold_orig[,oldNames]
+tcga_gold_new_filt <- tcga_gold_new[,newNames]
+
+plotCosineHeatmap(t(tcga_gold_orig),t(tcga_gold_new[,threshold_signature_order$signature]),
+                  threshold = 0.5,title = "Signature activity (TCGA gold) - all")
+
+plotCosineHeatmap(t(tcga_gold_orig_filt),t(tcga_gold_new_filt[,as.character(threshold_signature_order$signature[threshold_signature_order$signature %in% newNames])]),
+                  threshold = 0.4,title = "Signature activity (TCGA gold) - mapped")
+```
+It is also worth comparing the rate of zero-activities between the two implementaions to identify if mapped signatures have differing rates of zeros.
+
+```{r tcga_gold_sig_zeros}
+tcga_gold_orig_zeros <- apply(tcga_gold_orig,MARGIN = 2,FUN = function(x) sum(x == 0) / length(x))
+tcga_gold_new_zeros <- apply(tcga_gold_new,MARGIN = 2,FUN = function(x) sum(x == 0) / length(x))
+
+zeros_map <- data.frame(signature=signames,
+           original_threshold=tcga_gold_orig_zeros[match(signames,names(tcga_gold_orig_zeros))],
+           new_threshold=tcga_gold_new_zeros[match(signames,names(tcga_gold_new_zeros))]) %>%
+    unite(value,original_threshold,new_threshold,na.rm = T,remove = T) %>%
+    mutate(value = as.numeric(value)) %>%
+    mutate(signature = factor(signature,levels = signames)) %>%
+    mutate(group = groupnames) %>%
+    mutate(groupCols = groupCols)
+
+ggplot(zeros_map) +
+    geom_col(aes(x = signature,y = value,fill=groupCols)) +
+    facet_grid (.~ group, scales = "free_x", space = "free_x") +
+    #scale_y_continuous(labels = scales::percent) +
+    ggtitle("Signature activity zeros - TCGA gold") +
+    theme_bw() +
+    theme(axis.line = element_blank(), axis.ticks = element_line(linewidth = 1),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 ```
 
 ```{r sessionInfo}

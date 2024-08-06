@@ -1,4 +1,4 @@
-calculateActivityDrewsV2 = function(object,cancer.subset=NULL,SIGS) {
+calculateActivityDrewsV2 = function(object,cancer.subset=NULL) {
 
     # Extract relevant information from object
     # V = object@featFitting$sampleByComponent
@@ -10,8 +10,7 @@ calculateActivityDrewsV2 = function(object,cancer.subset=NULL,SIGS) {
 
 
     # Load signatures
-    #W = get(load("data/Drews2022_TCGA_Signatures.rda"))
-    W = SIGS
+    W = get(load("data/Drews2022_V2_TCGA_Signatures.rda"))
     if(!is.null(cancer.subset)){
         subset = getCancerSpecificSignatures(cancer.subset)
         W = W[rownames(W) %in% subset,]
