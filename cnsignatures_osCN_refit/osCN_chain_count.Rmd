@@ -1237,7 +1237,7 @@ as.data.frame(compOldNewCosineFiltThreshAll_sub) %>%
 
 In order to remain agnostic to previous solutions, it was elected to use the unaltered version of the selection method with pre-specified k values (the **pre-specified k / original threshold** signature definition set).
 
-* modal k - Use of modally selected k values for optimal number of signatures per group resulted in 19 signatures (9 pan-cancer) which matches with the pre-specified k-value number but with a reduced pan-cancer representation. Additionally, this set had a poorer mapping to the original signatures, with a greater amount of signatures mapping to multiple original signatures compared to other definitions. Overall, the linear dependence was on par with the other groups which did not use manual mapping
+* modal k - Use of modally selected k values for optimal number of signatures per group resulted in 18 signatures (9 pan-cancer) with a reduced pan-cancer representation. Additionally, this set had a poorer mapping to the original signatures, with a greater amount of signatures mapping to multiple original signatures compared to other definitions. Overall, the linear dependence was on par with the other groups which did not use manual mapping
 
 * **pre-specified k / original threshold** - Adjusting the optimal number of k signatures for both pan-cancer and BLCA cancer subtypes by an increment of 1 resulted in the same number of pan-cancer signatures as previously described and better mapping to original signature definitions. Linear independence across signature definitions was in line with both the modal k and threshold-adjusted implementation.
 
@@ -1483,6 +1483,7 @@ ggplot(threshold_signature_order) +
     theme(axis.line = element_blank(), axis.ticks = element_line(linewidth = 1),
         axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 ```
+
 Thresholded signature activities were computed across the TCGA gold standard set for both the original and new implementation of the signatures and cosine similarity between mapped signature definitions was performed to assess how well signature activities corresponed to one another after signature activity extraction.
 
 ```{r tcga_gold_sig_acts}
@@ -1498,9 +1499,9 @@ tcga_gold_new_filt <- tcga_gold_new[,newNames]
 plotCosineHeatmap(t(tcga_gold_orig),t(tcga_gold_new[,threshold_signature_order$signature]),
                   threshold = 0.5,title = "Signature activity (TCGA gold) - all")
 
-plotCosineHeatmap(t(tcga_gold_orig_filt),t(tcga_gold_new_filt[,as.character(threshold_signature_order$signature[threshold_signature_order$signature %in% newNames])]),
-                  threshold = 0.4,title = "Signature activity (TCGA gold) - mapped")
+plotCosineHeatmap(t(tcga_gold_orig_filt),t(tcga_gold_new_filt[,as.character(threshold_signature_order$signature[threshold_signature_order$signature %in% newNames])]),threshold = 0.4,title = "Signature activity (TCGA gold) - mapped")
 ```
+
 It is also worth comparing the rate of zero-activities between the two implementaions to identify if mapped signatures have differing rates of zeros.
 
 ```{r tcga_gold_sig_zeros}
