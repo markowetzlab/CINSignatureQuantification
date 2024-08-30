@@ -1313,6 +1313,8 @@ ggplot(mapping_alluvial,aes(axis1=original,axis2=name)) +
     theme(legend.position = "bottom",
           panel.grid = element_blank()) +
     ggtitle(label = "Canonical alluvial mapping",subtitle = "one-to-one - Pre-specified K - Cosine threshold = 0.74")
+
+write.table(x = mapping_alluvial,file = "data/drews2022_V1_V2_signature_mapping.tsv",quote = F,sep = "\t",col.names = TRUE)
 ```
 
 ```{r save_new_conpendium_tcga_6335}
@@ -1466,10 +1468,8 @@ ggplot(threshold_map) +
 
 ```{r apply_sig_act_thresholds_tcga_6335}
 ThreshNormaliseNewActs_NewSig_NewMix = sapply(names(Drews2022_V2_TCGA_Signature_Thresholds), function(thisSig) {
-
         sigVals = normaliseNewActs_NewSig_NewMix_noThresh[,thisSig]
         sigVals[ sigVals < Drews2022_V2_TCGA_Signature_Thresholds[thisSig] ] = 0
-
         return(sigVals)
     })
 
@@ -1502,7 +1502,7 @@ plotCosineHeatmap(t(tcga_gold_orig),t(tcga_gold_new[,threshold_signature_order$s
 plotCosineHeatmap(t(tcga_gold_orig_filt),t(tcga_gold_new_filt[,as.character(threshold_signature_order$signature[threshold_signature_order$signature %in% newNames])]),threshold = 0.4,title = "Signature activity (TCGA gold) - mapped")
 ```
 
-It is also worth comparing the rate of zero-activities between the two implementaions to identify if mapped signatures have differing rates of zeros.
+It is also worth comparing the rate of zero-activities between the two implementations to identify if mapped signatures have differing rates of zeros.
 
 ```{r tcga_gold_sig_zeros}
 tcga_gold_orig_zeros <- apply(tcga_gold_orig,MARGIN = 2,FUN = function(x) sum(x == 0) / length(x))
@@ -1525,6 +1525,15 @@ ggplot(zeros_map) +
     theme_bw() +
     theme(axis.line = element_blank(), axis.ticks = element_line(linewidth = 1),
         axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+
+```{r rename_and_map}
+mapping_file <- read.table("data/drews2022_V1_V2_signature_mapping.tsv",header = T,sep = "\t")
+prop_ordering <- c(as.character(threshold_signature_order$signature))
+
+mapping_file_ordered <- mapping_file[match(prop_ordering,mapping_file$name),]
+mapping_file_ordered$name_new <- paste0("CN",seq.int(1,nrow(mapping_file_ordered),1))
+mapping_file_ordered
 ```
 
 ```{r sessionInfo}
