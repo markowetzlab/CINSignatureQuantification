@@ -1533,7 +1533,11 @@ prop_ordering <- c(as.character(threshold_signature_order$signature))
 
 mapping_file_ordered <- mapping_file[match(prop_ordering,mapping_file$name),]
 mapping_file_ordered$name_new <- paste0("CN",seq.int(1,nrow(mapping_file_ordered),1))
-mapping_file_ordered
+mapping_file_ordered <- mapping_file_ordered[,c("name_new","original","cosineSim")]
+colnames(mapping_file_ordered) <- c("drews2022_V2","drews2022_original","cosineSim")
+drews2022_original_vs_V2_name_mapping <- mapping_file_ordered
+
+usethis::use_data(drews2022_original_vs_V2_name_mapping)
 ```
 
 ```{r sessionInfo}
