@@ -1533,11 +1533,164 @@ prop_ordering <- c(as.character(threshold_signature_order$signature))
 
 mapping_file_ordered <- mapping_file[match(prop_ordering,mapping_file$name),]
 mapping_file_ordered$name_new <- paste0("CN",seq.int(1,nrow(mapping_file_ordered),1))
-mapping_file_ordered <- mapping_file_ordered[,c("name_new","original","cosineSim")]
-colnames(mapping_file_ordered) <- c("drews2022_V2","drews2022_original","cosineSim")
-drews2022_original_vs_V2_name_mapping <- mapping_file_ordered
+mapping_file_ordered <- mapping_file_ordered[,c("name_new","name","original","cosineSim")]
+colnames(mapping_file_ordered) <- c("drews2022_V2","name","drews2022_original","cosineSim")
+mapping_file_ordered
+```
 
-usethis::use_data(drews2022_original_vs_V2_name_mapping)
+```{r orderedSigDefsandActs}
+## mapping
+Drews2022_original_vs_v2_name_mapping <- mapping_file_ordered
+
+## Thresholds file
+Drews2022_v2_TCGA_Signature_Thresholds <- Drews2022_V2_TCGA_Signature_Thresholds[mapping_file_ordered$name]
+names(Drews2022_v2_TCGA_Signature_Thresholds) <- mapping_file_ordered$drews2022_V2
+Drews2022_v2_TCGA_Signature_Thresholds
+
+## Signature defs
+Drews2022_v2_TCGA_Signatures <- osCN_new_sigDef[order(match(rownames(osCN_new_sigDef),prop_ordering)),]
+rownames(Drews2022_v2_TCGA_Signatures) <- mapping_file_ordered$drews2022_V2[match(prop_ordering,mapping_file_ordered$name)]
+head(Drews2022_v2_TCGA_Signatures)
+
+## Signature act scaling
+sigActorderingVec <- order(match(colnames(ThreshNormaliseNewActs_NewSig_NewMix),prop_ordering))
+ThreshNormaliseNewActs_NewSig_NewMix_ordered <- ThreshNormaliseNewActs_NewSig_NewMix[,sigActorderingVec]
+colnames(ThreshNormaliseNewActs_NewSig_NewMix_ordered) <- mapping_file_ordered$drews2022_V2[match(prop_ordering,mapping_file_ordered$name)]
+head(ThreshNormaliseNewActs_NewSig_NewMix_ordered) # Drews2022_TCGA_v2_SignatureActs (not exported)
+
+## scaling variables
+ThreshNormaliseNewActs_NewSig_NewMix_ordered_scaled <- scale(as.matrix(ThreshNormaliseNewActs_NewSig_NewMix_ordered))
+Drews2022_v2_TCGA_Scaling_Variables <- list(mean=attributes(ThreshNormaliseNewActs_NewSig_NewMix_ordered_scaled)$`scaled:center`,
+                                            scale=attributes(ThreshNormaliseNewActs_NewSig_NewMix_ordered_scaled)$`scaled:scale`)
+Drews2022_v2_TCGA_Scaling_Variables
+
+## CN2CN3 scaling parameters
+## This is computed downstream of this point in the clinical classifier section 
+## But saved as input string to allow export here.
+Drews2022_v2_CX3CX2_Clinical_classifier <- list(mean = c(CN3 = 0.534446561600389, CN2 = 0.113118812268331),
+     scale = c(CN3 = 0.090916422939345, CN2 = 0.0643674353255817))
+Drews2022_v2_CX3CX2_Clinical_classifier
+```
+
+```{r requiredDataForV2}
+d <- as.data.frame(data(package="CINSignatureQuantification")$results)
+d[grep("Drews",d$Title),]
+```
+
+```{r dataExportForV2}
+## Clinical classifier 
+Drews2022_v2_CX3CX2_Clinical_classifier
+# usethis::use_data(Drews2022_v2_CX3CX2_Clinical_classifier)
+
+## Mixture models
+Drews2022_v2_TCGA_Mixture_Models
+# usethis::use_data(Drews2022_v2_TCGA_Mixture_Models)
+
+## Scaling variables
+Drews2022_v2_TCGA_Scaling_Variables
+# usethis::use_data(Drews2022_v2_TCGA_Scaling_Variables)
+
+## Signature thresholds
+Drews2022_v2_TCGA_Signature_Thresholds
+# usethis::use_data(Drews2022_v2_TCGA_Signature_Thresholds)
+
+## signature defs
+Drews2022_v2_TCGA_Signatures
+# usethis::use_data(Drews2022_v2_TCGA_Signatures)
+
+## Mapping file data
+Drews2022_original_vs_v2_name_mapping
+# Write this file to data/
+# usethis::use_data(Drews2022_original_vs_v2_name_mapping)
+
+```
+
+## Clinical classifier and coxPH models
+
+```{r coxPH_CX2CX3-CN2CN3}
+## Load data from Rmd MultiFigures_Clinical_classifier
+dtSurvOV = readRDS(SURVIVALOV) # Drews2022_CIN_Compendium/Section 9 Building a clin classifier/input/Survival_and_BRCA_Status_TCGA-OV.rds
+metaFull = readRDS(META) # Drews2022_CIN_Compendium/Section 9 Building a clin classifier/input/Metadata_TCGA_ASCAT_penalty70.rds
+
+mTCGA = ThreshNormaliseNewActs_NewSig_NewMix_ordered
+mLRTCGA = apply(mTCGA, 2, function(x) clr(x))
+
+dfTCGA = data.frame(mLRTCGA)
+dfTCGA$Sample = rownames(dfTCGA)
+dtTCGA = data.table(dfTCGA)
+rm(dfTCGA)
+
+dtTCGA$Cancer = metaFull$cancer_type[ match(dtTCGA$Sample, metaFull$name) ]
+dtOV = dtTCGA[ dtTCGA$Cancer == "OV", ]
+
+dtOV$OS = dtSurvOV$OS[ match(dtOV$Sample, dtSurvOV$Name) ]
+dtOV$OS.time = dtSurvOV$OS.time[ match(dtOV$Sample, dtSurvOV$Name) ]
+dtOV$PFI = dtSurvOV$PFI[ match(dtOV$Sample, dtSurvOV$Name) ]
+dtOV$PFI.time = dtSurvOV$PFI.time[ match(dtOV$Sample, dtSurvOV$Name) ]
+
+dtOV$Age = dtSurvOV$AgeY[ match(dtOV$Sample, dtSurvOV$Name) ]
+dtOV$Race = dtSurvOV$Race[ match(dtOV$Sample, dtSurvOV$Name) ]
+dtOV$TS = dtSurvOV$TS[ match(dtOV$Sample, dtSurvOV$Name) ]
+
+resCoxOS2 = coxph(Surv(OS.time, OS) ~ CN1 + CN2 + CN3 + CN4 + CN5 + CN6 + CN7 + CN8 + CN9 + CN10 + CN11  + CN12 + CN13 + CN14 + CN15 + CN16 + CN17 + CN18 + CN19 + Age + Race + TS, data =  dtOV)
+pCoxOS2 = ggforest(resCoxOS2, data = dtOV, main = "Cox HR model for TCGA-OV OS")
+
+resCoxPFI2 = coxph(Surv(PFI.time, PFI) ~ CN1 + CN2 + CN3 + CN4 + CN5 + CN6 + CN7 + CN8 + CN9 + CN10 + CN11  + CN12 + CN13 + CN14 + CN15 + CN16 + CN17 + CN18 + CN19 + Age + Race + TS, data =  dtOV)
+pCoxPFI2 = ggforest(resCoxPFI2, data = dtOV, main = "Cox HR model for TCGA-OV PFI")
+
+#pCoxOS
+pCoxOS2
+#pCoxPFI
+pCoxPFI2
+```
+
+```{r CX2CX3-CN2CN3_classifier}
+applyClinClassCN = function(dtSurvOV, lModel) {
+  
+  ## Scale the activities
+  mTCGAOV = as.matrix(dtSurvOV[ , c("CN3", "CN2")])
+  rownames(mTCGAOV) = dtSurvOV$Name
+  smTCGAOV = sweep(sweep(mTCGAOV, 2, lModel$mean, FUN = '-'), 2, lModel$scale, FUN = "/")
+  
+  dtSurvOV$sCN3 = smTCGAOV[,"CN3"]
+  dtSurvOV$sCN2 = smTCGAOV[,"CN2"]
+  
+  ## Apply classifier
+  if(identical(dtSurvOV$Name, rownames(smTCGAOV))) {
+    dtSurvOV$ClassifierCN = ifelse(dtSurvOV$sCN3 >= dtSurvOV$sCN2, "Predicted sensitive", "Predicted resistant")  
+  } else {
+    stop("Something went wrong.")
+  }
+  
+  return(dtSurvOV)
+  
+}
+
+mTCGAdf <- as.data.frame(mTCGA[match(dtSurvOV$Name,rownames(mTCGA)),])
+
+all(rownames(mTCGAdf) == dtSurvOV$Name)
+
+dtSurvOV$CN3 <- mTCGAdf$CN3
+dtSurvOV$CN2 <- mTCGAdf$CN2
+
+mBRCA1 = as.matrix(dtSurvOV[ dtSurvOV$Status == "germline BRCA1+LOH", c("CN3", "CN2")])
+
+smBRCA1 = scale(mBRCA1)
+## Save model data
+lModel = list(mean = attributes(smBRCA1)$`scaled:center`, 
+              scale = attributes(smBRCA1)$`scaled:scale`)
+
+dtSurvOV = applyClinClassCN(dtSurvOV, lModel)
+
+## Plot for figure
+pOut = ggplot(dtSurvOV[ dtSurvOV$Status == "germline BRCA1+LOH", ], aes(x = sCN3, y = sCN2, colour = ClassifierCN)) + 
+  geom_point() + geom_abline(slope = 1, intercept = 0, colour = "grey30", linetype = "dashed") +
+  theme(legend.position = "none", axis.line = element_line(size = 0.5), 
+        axis.ticks = element_line(size = 0.5), axis.ticks.length = unit(.1, "cm"), 
+        plot.margin = unit(c(0, 0, 0, 0), "null"),) + 
+  coord_capped_cart(bottom = "both", left = "both", ylim = c(-2, 2)) +
+  labs(x = "Scaled CN3 activity", y = "Scaled CN2 activity") + theme(aspect.ratio = 1)
+pOut
 ```
 
 ```{r sessionInfo}
