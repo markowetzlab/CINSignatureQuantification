@@ -218,6 +218,40 @@ osCN_fix <- getOscillationDrewsV2(segs)
 dim(osCN_fix)
 ```
 
+```{r calc_newfixed_osCN_tcga_6335_withPos_label}
+osCN_fix_labelled <- getOscillationDrewsV2WITHLABEL(segs)
+dim(osCN_fix_labelled)
+```
+
+```{r newfixed_osCN_tcga_6335_withPos_label_dists}
+osCN_fix_labelled$value <- as.numeric(osCN_fix_labelled$value)
+
+## Zero counts only possible where label == FALSE so removed
+osCN_fix_labelled_noZero <- osCN_fix_labelled[!c(osCN_fix_labelled$value == 0 & osCN_fix_labelled$label == FALSE),]
+
+## Summary distributions for each label
+summary(osCN_fix_labelled_noZero$value[osCN_fix_labelled_noZero$label == FALSE])
+summary(osCN_fix_labelled_noZero$value[osCN_fix_labelled_noZero$label == TRUE])
+
+## Chain length quantiles > 0.99
+quantile(osCN_fix_labelled_noZero$value,probs = seq.int(0.99,1,0.0005))
+
+## percentage of chains > length 30
+sum(osCN_fix_labelled_noZero$value > 30) / length(osCN_fix_labelled_noZero$value) * 100
+
+ggplot(osCN_fix_labelled_noZero[osCN_fix_labelled_noZero$value < 33,]) +
+    geom_density(aes(value,fill=label,after_stat(ndensity)),adjust=5,alpha=0.3,position = "stack") +
+    #facet_wrap(. ~ label) +
+    theme_bw()
+
+## poisson test
+poisson_counts_labelled <- sum(osCN_fix_labelled_noZero$value[osCN_fix_labelled_noZero$label == TRUE])
+poisson_events_labelled <- length(osCN_fix_labelled_noZero$value[osCN_fix_labelled_noZero$label == TRUE])
+poisson_counts <- sum(osCN_fix_labelled_noZero$value[osCN_fix_labelled_noZero$label == FALSE])
+poisson_events <- length(osCN_fix_labelled_noZero$value[osCN_fix_labelled_noZero$label == FALSE])
+poisson.test(c(poisson_counts_labelled,poisson_counts),T = c(poisson_events_labelled,poisson_events))
+```
+
 ```{r mixtureModellingPoisson_tcga_6335}
 ## Implementation of 23_Fit_MixtureModels.R condensed functions to run as single line
 
