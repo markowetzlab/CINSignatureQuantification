@@ -131,7 +131,7 @@ getBestModel <- function(models,model_selection){
                    IC = abs(AIC(model))
                },
                ICL={
-                   IC = abs(ICL(model))
+                   IC = abs(flexmix::ICL(model))
                })
         if(IC < bestSolutionMAX) {
             message(paste0("...Current best IC: ",bestSolutionMAX))

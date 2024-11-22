@@ -924,6 +924,7 @@ ggplot(dtExposedSamples2) +
     guides(fill = guide_legend(ncol= 2)) +
     facet_wrap(vars(Cancer),scales = "free")
 ```
+
 #### Signature difference pre-specified vs modal k
 
 Comparing full signature sets between using previously specified k values for each signature subset versus taking the modal value for each signature subset there is the inclusion of one additional pan-cancer signature and one cancer-specific signature in the pre-specified K group.
@@ -1390,6 +1391,7 @@ source("osCN_source_funcs.R")
 Using newly implemented V2 function (temp implementation without dedicated data object loading) to compute new signature activities defined on new mixtures, SxC matrix, and ARD-NMF runs.
 
 ```{r get_sig_acts_new_definitions_loadData}
+meta.data <- read.table("data/Metadata_TCGA_ASCAT_penalty70.txt",header = T,sep = "\t")
 osCN_new_feats <- readRDS("data/tcga_6335_feats_newweights.rds")
 osCN_new_sxc <- readRDS("data/pan_new_oscn_mixture_tcga_SxC.rds")
 osCN_new_models <- readRDS("data/tcga_6335_mixture_newweights.rds")
@@ -1412,7 +1414,7 @@ head(normaliseNewActs_NewSig_NewMix_noThresh)
 
 ### Compute signature thresholds
 
-For each given signature, an estimated threshold for determining zero activity for signature exposure. This estimates the signature activity at which a non-zero signature exposure is due to noise rather than signal from a given mutational process. This was performed as described in the Drews publication with functions refactored to allow for future implementation into the signature package. Here, noise is simulated on newly computed features, feature mixture models, and signature definitions to generate 1000 signature activity matrices over which several methods are applied to identify different signature-specific thresholds.
+For each given signature, an estimated threshold for determining zero activity for signature exposure. This estimates the signature activity at which a non-zero signature exposure is due to noise rather than signal from a given mutational process. This was performed as described in the Drews publication with functions re-factored to allow for future implementation into the signature package. Here, noise is simulated on newly computed features, feature mixture models, and signature definitions to generate 1000 signature activity matrices over which several methods are applied to identify different signature-specific thresholds.
 
 ```{r estimate_sig_thresholds_tcga_6335_sig19}
 if(!file.exists("data/new_sig19_tcga_thresholds.rds")){
@@ -1429,6 +1431,7 @@ if(!file.exists("data/new_sig19_tcga_thresholds.rds")){
 }
 head(new_sig19_tcga_thresholds)
 ```
+
 The same process was applied to the TCGA gold standard set rather than the full TCGA 6335 sample set to compare threshold differences but were broadly the same. This code is not set to be evaluated as it is not of any further use downstream and thresholds from the full 6335 set are used. 
 
 ```{r estimate_sig_thresholds_tcga_gold_sig19,eval=FALSE}
@@ -1608,7 +1611,7 @@ Drews2022_v2_CX3CX2_Clinical_classifier
 
 ```{r requiredDataForV2}
 d <- as.data.frame(data(package="CINSignatureQuantification")$results)
-d[grep("Drews",d$Title),]
+d[grep("Drews",d$Item),]
 ```
 
 ```{r dataExportForV2}
@@ -1639,15 +1642,102 @@ Drews2022_original_vs_v2_name_mapping
 
 ```
 
-## Clinical classifier and coxPH models
+## Mutated genes
+
+```{r getData}
+## Uses raw signature activity
+#RAW=file.path(BASE, "input/Signature_Compendium_v5_Cosine-0.74_Activities_raw_THRESH95_NAMESAPRIL21.rds")
+
+#COLS=file.path(BASE, "input/TCGA_colour_scheme.txt")
+#META=file.path(BASE, "input/Metadata_TCGA_ASCAT_penalty70.rds")
+
+## Driver
+#CNSTATE=file.path(BASE, "input/CN_State_GoIs_TCGA.rds")
+#SNVMUTS=file.path(BASE, "input/SNV_Status_GoIs_TCGA.rds")
+#GENELOOKUP=file.path(BASE, "input/Reactome_and_Driver_genes_and_their_IDs.txt")
+
+# Use to introduce additional knowledge for germline BRCA1 and BRCA2
+#BRCASAMPLES=file.path(BASE, "input/TCGA_Exposures_and_BRCA_Status_plusGene.rds")
+
+# For 2nd round of reviews do additional analysis on CCNE1
+#REVIEW=TRUE
+
+## Load files
+#raw = readRDS(RAW)
+newActs_NewSig_NewMix_raw <- t(calculateActivityDrewsV2(object = osCN_new_sxc,SIGS = osCN_new_sigDef))[,sigActorderingVec]
+colnames(newActs_NewSig_NewMix_raw) <- Drews2022_original_vs_v2_name_mapping$drews2022_V2
+raw <- newActs_NewSig_NewMix_raw
+#meta = readRDS(META)
+meta.data = meta.data
+
+# Driver
+cns = readRDS("../../Drews2022_CIN_Compendium/Section 7 Identification of putative signature aetiologies/Section 7.1 Linking signature activities to mutated genes/input/CN_State_GoIs_TCGA.rds")
+
+dels = cns[ cns$consequence == "DEL", ]
+amps = cns[ cns$consequence == "AMP", ]
+
+snv = readRDS("../../Drews2022_CIN_Compendium/Section 7 Identification of putative signature aetiologies/Section 7.1 Linking signature activities to mutated genes/input/SNV_Status_GoIs_TCGA.rds")
+
+# For providing additional data on BRCA1/2, RAD51C mutated samples
+brcaMuts = readRDS("C:/Users/smith10/Git_repo/Drews2022_CIN_Compendium/Section 7 Identification of putative signature aetiologies/Section 7.1 Linking signature activities to mutated genes/input/TCGA_Exposures_and_BRCA_Status_plusGene.rds")
+
+brca1 = unique(as.character(brcaMuts$Sample[ grepl("[germline|somatic] BRCA1",brcaMuts$Status) ]))
+brca2 = unique(as.character(brcaMuts$Sample[ grepl("[germline|somatic] BRCA2",brcaMuts$Status) ]))
+rad51c = unique(as.character(brcaMuts$Sample[ grepl("RAD51C", brcaMuts$Status) ]))
+
+## For checking oncogenes and tsgs with amps and dels
+dtGeneLookup = fread(file = "C:/Users/smith10/Git_repo/Drews2022_CIN_Compendium/Section 7 Identification of putative signature aetiologies/Section 7.1 Linking signature activities to mutated genes/input/Reactome_and_Driver_genes_and_their_IDs.txt")
+
+## Convert labels in lookup data frame
+dtGeneLookup$Status[ grepl("oncogene", dtGeneLookup$Status) ] = "Oncogene"
+dtGeneLookup$Status[ grepl("tsg", dtGeneLookup$Status) ] = "TSG"
+dtGeneLookup$Status[ dtGeneLookup$Status == "" ] = "Ambivalent"
+
+## Oncogenes (Potentially refined with transcriptomic data)
+oncogenes = dtGeneLookup$name[ dtGeneLookup$Status == "Oncogene" ]
+oncogenes = c(oncogenes, "CCNE1")
+
+# Ruben selected all except FS but should realistically not select nonsense 
+# or splice site as these are more likely LoF in the context of an Oncogene
+mutsOnc = snv[ snv$gene %in% oncogenes & ( ! grepl("Frame_Shift", snv$consequence) ), ]  
+ampsOnc = amps[ amps$gene %in% oncogenes, ]
+
+snvONCS = rbind(mutsOnc, ampsOnc)
+
+## TSGs - treat every other gene as tsg
+tsgs = dtGeneLookup$name[ dtGeneLookup$Status != "Oncogene" ]
+
+# For reviews add CCNE1 and rerun this script
+tsgs = tsgs[ tsgs != "CCNE1" ]
+
+## Again, ruben did not filter on consequence, leaving ncRNA variants included
+mutsTSG = snv[ snv$gene %in% tsgs, ]
+delsTSG = dels[ dels$gene %in% tsgs, ]
+
+snvDELS = rbind(mutsTSG, delsTSG)
+
+## Merge oncogenes and tsgs
+muts = rbind(snvONCS, snvDELS)
+mutSumm = unclass(table(muts$gene, muts$consequence))
+
+
+scExp = scale(raw, center = TRUE, scale = TRUE)
+dtAct = data.table(melt(scExp))
+colnames(dtAct) = c("Samples", "Signature", "Exposure")
+dtAct
+```
+
+## HRD Clinical classifier and coxPH models
 
 ```{r coxPH_CX2CX3-CN2CN3}
 ## Load data from Rmd MultiFigures_Clinical_classifier
-dtSurvOV = readRDS(SURVIVALOV) # Drews2022_CIN_Compendium/Section 9 Building a clin classifier/input/Survival_and_BRCA_Status_TCGA-OV.rds
-metaFull = readRDS(META) # Drews2022_CIN_Compendium/Section 9 Building a clin classifier/input/Metadata_TCGA_ASCAT_penalty70.rds
+dtSurvOV = readRDS("../../Drews2022_CIN_Compendium/Section 9 Building a clin classifier/input/Survival_and_BRCA_Status_TCGA-OV.rds")
+# Drews2022_CIN_Compendium/Section 9 Building a clin classifier/input/Survival_and_BRCA_Status_TCGA-OV.rds
+
+metaFull = meta.data
 
 mTCGA = ThreshNormaliseNewActs_NewSig_NewMix_ordered
-mLRTCGA = apply(mTCGA, 2, function(x) clr(x))
+mLRTCGA = apply(mTCGA, 2, function(x) compositions::clr(x))
 
 dfTCGA = data.frame(mLRTCGA)
 dfTCGA$Sample = rownames(dfTCGA)
@@ -1666,11 +1756,11 @@ dtOV$Age = dtSurvOV$AgeY[ match(dtOV$Sample, dtSurvOV$Name) ]
 dtOV$Race = dtSurvOV$Race[ match(dtOV$Sample, dtSurvOV$Name) ]
 dtOV$TS = dtSurvOV$TS[ match(dtOV$Sample, dtSurvOV$Name) ]
 
-resCoxOS2 = coxph(Surv(OS.time, OS) ~ CN1 + CN2 + CN3 + CN4 + CN5 + CN6 + CN7 + CN8 + CN9 + CN10 + CN11  + CN12 + CN13 + CN14 + CN15 + CN16 + CN17 + CN18 + CN19 + Age + Race + TS, data =  dtOV)
-pCoxOS2 = ggforest(resCoxOS2, data = dtOV, main = "Cox HR model for TCGA-OV OS")
+resCoxOS2 = survival::coxph(survival::Surv(OS.time, OS) ~ CN1 + CN2 + CN3 + CN4 + CN5 + CN6 + CN7 + CN8 + CN9 + CN10 + CN11 + CN12 + CN13 + CN14 + CN15 + CN16 + CN17 + CN18 + CN19 + Age + Race + TS, data =  dtOV)
+pCoxOS2 = survminer::ggforest(resCoxOS2, data = dtOV, main = "Cox HR model for TCGA-OV OS")
 
-resCoxPFI2 = coxph(Surv(PFI.time, PFI) ~ CN1 + CN2 + CN3 + CN4 + CN5 + CN6 + CN7 + CN8 + CN9 + CN10 + CN11  + CN12 + CN13 + CN14 + CN15 + CN16 + CN17 + CN18 + CN19 + Age + Race + TS, data =  dtOV)
-pCoxPFI2 = ggforest(resCoxPFI2, data = dtOV, main = "Cox HR model for TCGA-OV PFI")
+resCoxPFI2 = survival::coxph(survival::Surv(PFI.time, PFI) ~ CN1 + CN2 + CN3 + CN4 + CN5 + CN6 + CN7 + CN8 + CN9 + CN10 + CN11 + CN12 + CN13 + CN14 + CN15 + CN16 + CN17 + CN18 + CN19 + Age + Race + TS, data =  dtOV)
+pCoxPFI2 = survminer::ggforest(resCoxPFI2, data = dtOV, main = "Cox HR model for TCGA-OV PFI")
 
 #pCoxOS
 pCoxOS2
@@ -1719,10 +1809,10 @@ dtSurvOV = applyClinClassCN(dtSurvOV, lModel)
 ## Plot for figure
 pOut = ggplot(dtSurvOV[ dtSurvOV$Status == "germline BRCA1+LOH", ], aes(x = sCN3, y = sCN2, colour = ClassifierCN)) + 
   geom_point() + geom_abline(slope = 1, intercept = 0, colour = "grey30", linetype = "dashed") +
-  theme(legend.position = "none", axis.line = element_line(size = 0.5), 
+  theme(legend.position = "none", axis.line = element_line(linewidth = 0.5), 
         axis.ticks = element_line(size = 0.5), axis.ticks.length = unit(.1, "cm"), 
         plot.margin = unit(c(0, 0, 0, 0), "null"),) + 
-  coord_capped_cart(bottom = "both", left = "both", ylim = c(-2, 2)) +
+  lemon::coord_capped_cart(bottom = "both", left = "both", ylim = c(-2, 2)) +
   labs(x = "Scaled CN3 activity", y = "Scaled CN2 activity") + theme(aspect.ratio = 1)
 pOut
 ```

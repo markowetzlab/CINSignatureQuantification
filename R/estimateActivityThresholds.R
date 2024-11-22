@@ -1,6 +1,6 @@
 #' estimateThresholds
 #'
-#' @param object An object of class SigQuant or PLACEHOLDERCLASS containing computed features, signature definitions, siganture activities, and feature mixture models.
+#' @param object An object of class SigQuant or PLACEHOLDERCLASS containing computed features, signature definitions, signature activities, and feature mixture models.
 #' @param iters Number of noise simulation iterations to perform to estimate thresholds.
 #' @param method Feature and mixture model method to use for computing simulated features and signature activities
 #' @param parallel Use doFuture parallelisation to run iterations set by future::plan()
@@ -159,7 +159,7 @@ addGaussianNoise <- function(dfFeat, sdProp = 20, finalWidth = NA) {
     ## If wished the width of noise can be limited by "finalWidth" to a determined maximum width around
     ## the original value (to avoid large outliers).
 
-    dfFeat$value2 = rnorm(n = length(dfFeat$value), mean = dfFeat$value, sd = dfFeat$value/sdProp)
+    dfFeat$value2 = stats::rnorm(n = length(dfFeat$value), mean = dfFeat$value, sd = dfFeat$value/sdProp)
 
     # Remove outliers if wished
     if(! is.na(finalWidth)) {
@@ -195,7 +195,7 @@ calculateThresholds <- function(lSignatures=NULL,originalActivities=NULL,minmaxN
     siglevels <- stringr::str_sort(levels(factor(dtSigs$Var2)),numeric = T)
     dtSigs$Var2 <- factor(dtSigs$Var2,levels = siglevels)
 
-    dtOri <- data.table(formatSignatureList(originalActivities))
+    dtOri <- data.table::data.table(formatSignatureList(originalActivities))
     dtOri$Var2 <- factor(dtOri$Var2,levels = siglevels)
 
     # Plot boxplot for each sample and signature
@@ -236,7 +236,7 @@ calculateThresholds <- function(lSignatures=NULL,originalActivities=NULL,minmaxN
 
         # Method 2: 95% quantile of all true zero samples
         allZeroSamples = as.character(dtOriCS2$Var1[ dtOriCS2$value == 0 ])
-        dfQ75 = aggregate(value ~ Var1, dtCS2[ dtCS2$Var1 %in% allZeroSamples, ], q75)
+        dfQ75 = stats::aggregate(value ~ Var1, dtCS2[ dtCS2$Var1 %in% allZeroSamples, ], q75)
         thresh2 = q95(dfQ75$value)
         # Method 3 & 4: Use values from true zero samples to fit a Gaussian mixture model and identify
         # first samples that don't fit into the Gaussian.
