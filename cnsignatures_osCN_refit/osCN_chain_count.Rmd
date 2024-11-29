@@ -1349,7 +1349,7 @@ ggplot(mapping_alluvial,aes(axis1=original,axis2=name)) +
           panel.grid = element_blank()) +
     ggtitle(label = "Canonical alluvial mapping",subtitle = "one-to-one - Pre-specified K - Cosine threshold = 0.74")
 
-write.table(x = mapping_alluvial,file = "data/drews2022_V1_V2_signature_mapping.tsv",quote = F,sep = "\t",col.names = TRUE)
+write.table(x = mapping_alluvial,file = "data/drews2022_V1_V2_signature_mapping.tsv",quote = F,sep = "\t",row.names = F,col.names = TRUE)
 ```
 
 ```{r save_new_conpendium_tcga_6335}
@@ -1381,6 +1381,9 @@ library(qgraph)
 library(lsa)
 library(ggthemes)
 library(ggalluvial)
+library(gridExtra)
+library(lemon)
+library(ggthemes)
 library(CINSignatureQuantification) # install getOS-count branch of package
 ```
 
@@ -1510,7 +1513,8 @@ ThreshNormaliseNewActs_NewSig_NewMix = sapply(names(Drews2022_V2_TCGA_Signature_
         return(sigVals)
     })
 
-threshold_signature_order <- data.frame(prop_act=sort(apply(ThreshNormaliseNewActs_NewSig_NewMix,MARGIN = 2,FUN = function(x) sum(x > 0) / length(x)),decreasing = T)) %>%
+threshold_signature_order <- data.frame(prop_act=sort(apply(ThreshNormaliseNewActs_NewSig_NewMix,MARGIN = 2,
+                                                            FUN = function(x) sum(x > 0) / length(x)),decreasing = T)) %>%
     rownames_to_column("signature") %>%
     mutate(signature = factor(signature,levels=signature))
 
@@ -1566,10 +1570,10 @@ ggplot(zeros_map) +
 
 ```{r rename_and_map}
 mapping_file <- read.table("data/drews2022_V1_V2_signature_mapping.tsv",header = T,sep = "\t")
-prop_ordering <- c(as.character(threshold_signature_order$signature))
+prop_ordering <- c(as.character(threshold_signature_order$signature),"old unmapped")
 
 mapping_file_ordered <- mapping_file[match(prop_ordering,mapping_file$name),]
-mapping_file_ordered$name_new <- paste0("CN",seq.int(1,nrow(mapping_file_ordered),1))
+mapping_file_ordered$name_new <- c(paste0("CS",seq.int(1,nrow(mapping_file_ordered)-1,1)),"old unmapped")
 mapping_file_ordered <- mapping_file_ordered[,c("name_new","name","original","cosineSim")]
 colnames(mapping_file_ordered) <- c("drews2022_V2","name","drews2022_original","cosineSim")
 mapping_file_ordered
@@ -1577,7 +1581,7 @@ mapping_file_ordered
 
 ```{r orderedSigDefsandActs}
 ## mapping
-Drews2022_original_vs_v2_name_mapping <- mapping_file_ordered
+Drews2022_original_vs_v2_name_mapping <- mapping_file_ordered[mapping_file_ordered$name != "old unmapped",]
 
 ## Thresholds file
 Drews2022_v2_TCGA_Signature_Thresholds <- Drews2022_V2_TCGA_Signature_Thresholds[mapping_file_ordered$name]
@@ -1604,9 +1608,23 @@ Drews2022_v2_TCGA_Scaling_Variables
 ## CN2CN3 scaling parameters
 ## This is computed downstream of this point in the clinical classifier section 
 ## But saved as input string to allow export here.
-Drews2022_v2_CX3CX2_Clinical_classifier <- list(mean = c(CN3 = 0.534446561600389, CN2 = 0.113118812268331),
-     scale = c(CN3 = 0.090916422939345, CN2 = 0.0643674353255817))
+Drews2022_v2_CX3CX2_Clinical_classifier <- list(mean = c(CS3 = 0.534446561600389, CS2 = 0.113118812268331),
+     scale = c(CS3 = 0.090916422939345,CS2 = 0.0643674353255817))
 Drews2022_v2_CX3CX2_Clinical_classifier
+```
+
+```{r mapping_aluvial_2}
+ggplot(mapping_file_ordered,
+       aes(axis1=factor(drews2022_V2,levels=stringr::str_sort(drews2022_V2,numeric = T)),
+           axis2=factor(drews2022_original,levels=stringr::str_sort(unique(drews2022_original),numeric = T)))) +
+    geom_alluvium(aes(fill=as.numeric(cosineSim))) +
+    scale_fill_gradient2(low="white", high="red",name = "cosine similarity",limits = c(0,1)) +
+    geom_stratum(width = 0.4, fill = "white") +
+    geom_text(stat = "stratum",size = 5, aes(label = after_stat(stratum))) +
+    theme_void() +
+    theme(legend.position = "bottom",
+          panel.grid = element_blank()) +
+    ggtitle(label = "Canonical alluvial mapping",subtitle = "one-to-one - Pre-specified K - Cosine threshold = 0.74")
 ```
 
 ```{r requiredDataForV2}
@@ -1644,24 +1662,9 @@ Drews2022_original_vs_v2_name_mapping
 
 ## Mutated genes
 
-```{r getData}
-## Uses raw signature activity
-#RAW=file.path(BASE, "input/Signature_Compendium_v5_Cosine-0.74_Activities_raw_THRESH95_NAMESAPRIL21.rds")
+### Driver associations
 
-#COLS=file.path(BASE, "input/TCGA_colour_scheme.txt")
-#META=file.path(BASE, "input/Metadata_TCGA_ASCAT_penalty70.rds")
-
-## Driver
-#CNSTATE=file.path(BASE, "input/CN_State_GoIs_TCGA.rds")
-#SNVMUTS=file.path(BASE, "input/SNV_Status_GoIs_TCGA.rds")
-#GENELOOKUP=file.path(BASE, "input/Reactome_and_Driver_genes_and_their_IDs.txt")
-
-# Use to introduce additional knowledge for germline BRCA1 and BRCA2
-#BRCASAMPLES=file.path(BASE, "input/TCGA_Exposures_and_BRCA_Status_plusGene.rds")
-
-# For 2nd round of reviews do additional analysis on CCNE1
-#REVIEW=TRUE
-
+```{r gene_interactions_load_data}
 ## Load files
 #raw = readRDS(RAW)
 newActs_NewSig_NewMix_raw <- t(calculateActivityDrewsV2(object = osCN_new_sxc,SIGS = osCN_new_sigDef))[,sigActorderingVec]
@@ -1719,12 +1722,563 @@ snvDELS = rbind(mutsTSG, delsTSG)
 ## Merge oncogenes and tsgs
 muts = rbind(snvONCS, snvDELS)
 mutSumm = unclass(table(muts$gene, muts$consequence))
+```
 
-
+```{r gene_to_signatures_univariate}
 scExp = scale(raw, center = TRUE, scale = TRUE)
 dtAct = data.table(melt(scExp))
 colnames(dtAct) = c("Samples", "Signature", "Exposure")
-dtAct
+
+allDrivers = unique(muts$gene)
+allSigs = levels(dtAct$Signature)
+
+dtSigMuts = dtAct[ dtAct$Samples %in% unique(muts$sample), ]
+
+## Add cancer type (only needed for additional analyses)
+dtSigMuts$Cancer = meta.data$cancer_type[ match(dtSigMuts$Samples, meta.data$name) ]
+
+lSignatureTests = lapply(allSigs, function(sig) {
+
+  print(sig)
+
+  thisSig = dtSigMuts[ dtSigMuts$Signature == sig, ]
+
+  ## For all normal drivers
+  lAllDrivers = lapply(allDrivers, function(driver) {
+
+    # Transfer mutation status
+    thisSig$driver = FALSE
+    mutatedSamples = unique(muts$sample[ muts$gene == driver ])
+    # Add prior knowledge
+    if(driver == "BRCA1") {  mutatedSamples = unique(c(mutatedSamples, brca1)) }
+    if(driver == "BRCA2") {  mutatedSamples = unique(c(mutatedSamples, brca2)) }
+    if(driver == "RAD51C") {  mutatedSamples = unique(c(mutatedSamples, rad51c)) }
+
+    thisSig$driver[ thisSig$Samples %in% mutatedSamples ] = TRUE
+    thisSig$driver = as.logical(thisSig$driver)
+
+    # For documentation
+    # cohortProp = signif(mean(thisSig$driver), 4)
+    # zeroProp = signif(mean(thisSig$driver[ thisSig$Exposure == 0 ]), 4)
+
+    # t-Test above zero exposures
+    positive = thisSig$Exposure[ thisSig$driver ]
+    negative = thisSig$Exposure[ ! thisSig$driver ]
+    meanPos = ifelse(length(positive) > 0, signif(mean(positive), 4), 0)
+    meanNeg = signif(mean(negative), 4)
+    meanDiff = signif(meanPos-meanNeg, 4)
+    if(length(positive) > 1) {
+      ## T-test between groups
+      tTest = t.test(positive, negative, var.equal = FALSE)
+      tTestPval = signif(tTest$p.value, 4)
+
+      ## Multivariate regression
+      # thisSig$driver = factor(thisSig$driver, levels = c("FALSE", "TRUE"))
+      # lmModel = lm(Exposure ~ 1 + driver + Cancer, thisSig)
+      # meanDiff = signif(summary(lmModel)$coefficients["driverTRUE",1], 4)
+      # tTestPval = signif(summary(lmModel)$coefficients["driverTRUE",4],)
+
+
+    } else {
+      tTestPval = 1
+    }
+
+    out = c(sig, driver, length(positive), length(negative), meanPos,
+            meanNeg, meanDiff, tTestPval)
+
+    # out = c(sig, driver, zeroProp, cohortProp, signif(zeroProp-cohortProp, 4),
+    # signif(fTest$p.value, 4), meanPos, meanNeg, signif(meanPos-meanNeg, 4), tTestPval)
+    return(out)
+
+
+  } )
+
+
+  ### Two additional tests regarding BRCA1 whether it was rescued or not
+  ## For BRCA1 without TB53BP1, RIF1 and MAD2L2 mutation
+  # Transfer mutation status
+  thisSig$driver = FALSE
+  brcaHit = unique(c(muts$sample[muts$gene == "BRCA1"], brca1))
+  rescueHit = unique(muts$sample[muts$gene %in% c("TB53BP1", "RIF1", "MAD2L2")])
+  thisSig$driver[ thisSig$Samples %in% brcaHit &
+                    ! ( thisSig$Samples %in% rescueHit ) ] = TRUE
+  thisSig$driver = as.logical(thisSig$driver)
+
+  # t-Test above zero exposures
+  positive = thisSig$Exposure[ thisSig$driver ]
+  negative = thisSig$Exposure[ ! thisSig$driver ]
+  meanPos = ifelse(length(positive) > 0, signif(mean(positive),4), 0)
+  meanNeg = signif(mean(negative),4)
+  if(length(positive) > 1) {
+    tTest = t.test(positive, negative, var.equal = FALSE)
+    tTestPval = signif(tTest$p.value,4)
+  } else {
+    tTestPval = 1
+  }
+
+  out = c(sig, "BRCA1_noRescue", length(positive), length(negative), meanPos, meanNeg,
+          signif(meanPos-meanNeg,4), tTestPval)
+  lAllDrivers[[length(lAllDrivers)+1]] = out
+
+  ## For BRCA1 with TP53BP1, RIF1 or MAD2L2
+  # Transfer mutation status
+  thisSig$driver = NULL
+  thisSig$driver = FALSE
+  thisSig$driver[ thisSig$Samples %in% brcaHit & thisSig$Samples %in% rescueHit ] = TRUE
+  thisSig$driver = as.logical(thisSig$driver)
+
+  # t-Test above zero exposures
+  positive = thisSig$Exposure[ thisSig$driver ]
+  negative = thisSig$Exposure[ ! thisSig$driver ]
+  meanPos = ifelse(length(positive) > 0, signif(mean(positive),4), 0)
+  meanNeg = signif(mean(negative),4)
+  if(length(positive) > 1) {
+    tTest = t.test(positive, negative, var.equal = FALSE)
+    tTestPval = signif(tTest$p.value,4)
+  } else {
+    tTestPval = 1
+  }
+
+  ## Note: The t.test is not significant but if I remove the one outlier
+  ## from the "positives" the test becomes significant. A wilcox.test is
+  ## slightly significant but plus p-value correction it is not anymore.
+  ## Too little data to call it.
+  out = c(sig, "BRCA1_rescued", length(positive), length(negative), meanPos, meanNeg,
+          signif(meanPos-meanNeg,4), tTestPval)
+  lAllDrivers[[length(lAllDrivers)+1]] = out
+
+
+  ## Wrap up
+  dtDriverTests = data.table(do.call(rbind, lAllDrivers))
+  colnames(dtDriverTests) = c("Signature", "Driver", "SampsMut", "SampsNonMut",
+                              "MeanDriverPos", "MeanDriverNeg", "MeanDiff", "pValTTest")
+  dtDriverTests$pAdjTTest = p.adjust(as.numeric(dtDriverTests$pValTTest), method = "BH")
+
+  return(dtDriverTests)
+
+} )
+
+dtDriverExps = rbindlist(lSignatureTests)
+colnames(dtDriverExps) = c("Signature", "Driver", "SampsMut", "SampsNonMut", "MeanDriverPos",
+                           "MeanDriverNeg", "MeanDiff", "pValTTest", "pAdjTTest")
+
+dtDriverExps$SampsMut = as.numeric(dtDriverExps$SampsMut)
+dtDriverExps$SampsNonMut = as.numeric(dtDriverExps$SampsNonMut)
+dtDriverExps$MeanDriverPos = as.numeric(dtDriverExps$MeanDriverPos)
+dtDriverExps$MeanDriverNeg = as.numeric(dtDriverExps$MeanDriverNeg)
+dtDriverExps$MeanDiff = as.numeric(dtDriverExps$MeanDiff)
+dtDriverExps$pValTTest = as.numeric(dtDriverExps$pValTTest)
+dtDriverExps$pAdjTTest = as.numeric(dtDriverExps$pAdjTTest)
+
+dtCCNE = dtDriverExps[ dtDriverExps$Driver == "CCNE1", ]
+dtCCNE[ dtCCNE$MeanDiff > 0.4 & dtCCNE$pAdjTTest < 0.005, ]
+
+dtOut = dtDriverExps[dtDriverExps$pAdjTTest < 0.05,]
+dtOutPrint = dtOut[ dtOut$MeanDiff > 0, ]
+dtFilt = dtOutPrint[ dtOutPrint$MeanDiff > 0.4 & dtOutPrint$pAdjTTest < 0.005, ]
+```
+
+```{r gene_to_signatures_multivariate}
+#### PART B: Multivariate regression
+## Same process just with cancer type correction => For review process only
+## Add cancer type (only needed for additional analyses)
+dtSigMuts$Cancer = meta.data$cancer_type[ match(dtSigMuts$Samples, meta.data$name) ]
+lSignatureTestsCorr = lapply(allSigs, function(sig) {
+
+  print(sig)
+
+  thisSig = dtSigMuts[ dtSigMuts$Signature == sig, ]
+
+  ## For all normal drivers
+  lAllDrivers = lapply(allDrivers, function(driver) {
+
+    # Transfer mutation status
+    thisSig$driver = FALSE
+    mutatedSamples = unique(muts$sample[ muts$gene == driver ])
+    # Add prior knowledge
+    if(driver == "BRCA1") {  mutatedSamples = unique(c(mutatedSamples, brca1)) }
+    if(driver == "BRCA2") {  mutatedSamples = unique(c(mutatedSamples, brca2)) }
+    if(driver == "RAD51C") {  mutatedSamples = unique(c(mutatedSamples, rad51c)) }
+
+    thisSig$driver[ thisSig$Samples %in% mutatedSamples ] = TRUE
+    thisSig$driver = as.logical(thisSig$driver)
+
+    # Gather stats
+    positive = thisSig$Exposure[ thisSig$driver ]
+    negative = thisSig$Exposure[ ! thisSig$driver ]
+    if(length(positive) > 1) {
+
+      ## Multivariate regression
+      thisSig$driver = factor(thisSig$driver, levels = c("FALSE", "TRUE"))
+      lmModel = lm(Exposure ~ 1 + driver + Cancer, thisSig)
+      meanDiff = signif(summary(lmModel)$coefficients["driverTRUE",1], 4)
+      tTestPval = signif(summary(lmModel)$coefficients["driverTRUE",4],)
+    } else {
+      meanDiff = 0
+      tTestPval = 1
+    }
+
+    out = c(sig, driver, length(positive), length(negative), meanDiff, tTestPval)
+    return(out)
+  } )
+
+  ## Wrap up
+  dtDriverTests = data.table(do.call(rbind, lAllDrivers))
+  colnames(dtDriverTests) = c("Signature", "Driver", "SampsMut", "SampsNonMut",
+                              "MeanDiff", "pValTTest")
+  return(dtDriverTests)
+
+} )
+
+dtDriverExpsCorr = rbindlist(lSignatureTestsCorr)
+colnames(dtDriverExpsCorr) = c("Signature", "Driver", "SampsMut", "SampsNonMut",
+                               "MeanDiff", "pValLM")
+dtDriverExpsCorr$SampsMut = as.numeric(dtDriverExpsCorr$SampsMut)
+dtDriverExpsCorr$SampsNonMut = as.numeric(dtDriverExpsCorr$SampsNonMut)
+dtDriverExpsCorr$MeanDiff = as.numeric(dtDriverExpsCorr$MeanDiff)
+dtDriverExpsCorr$pValLM = as.numeric(dtDriverExpsCorr$pValLM)
+
+
+## Filter and correct p-values
+dtDriverFiltCorr = dtDriverExpsCorr[ dtDriverExpsCorr$MeanDiff > 0.2, ]
+dtDriverFiltCorr$pAdjLM = p.adjust(as.numeric(dtDriverFiltCorr$pValLM), method = "BH")
+dtDriverSigCorr = dtDriverFiltCorr[ dtDriverFiltCorr$pAdjLM < 0.05, ]
+
+lMissed = lapply(unique(dtFilt$Signature), function(sig) {
+
+  dtOld = dtFilt[ dtFilt$Signature == sig, ]
+  dtNew = dtDriverSigCorr[ dtDriverSigCorr$Signature == sig, ]
+
+  dtMiss = dtOld[ ! dtOld$Driver %in% dtNew$Driver, ]
+  return(dtMiss)
+} )
+
+dtMissed = rbindlist(lMissed)
+```
+
+```{r gene_signif}
+IMPORTANTGENES = c("JAK2", "POLE", "AKT1", "BRAF", "CCND1", "CDK4", "CUL1", "EGFR",
+                   "ERBB2", "ERBB3", "ERCC2", "H3F3A", "IDH1", "IDH2", "KRAS", "MAPK1",
+                   "MYC", "MYCN", "NFE2L2", "PCBP1", "PIK3R2", "PMS1", "PPP2R1A",
+                   "RAC1", "SOS1", "SPOP", "U2AF1", "ARID1A", "ATM", "BRCA1", "BRCA1 rescued",
+                   "BRCA2", "CDKN2C", "CIC", "FBXW7", "NF1", "NOTCH1", "PBRM1",
+                   "RPL22", "SMAD4", "SOX9", "TP53", "VHL", "PSMA4")
+
+lSignatureTests = lapply(allSigs, function(sig) {
+
+  print(sig)
+
+  thisSig = dtSigMuts[ dtSigMuts$Signature == sig, ]
+
+  ## For all normal drivers
+  lAllDrivers = lapply(IMPORTANTGENES, function(driver) {
+
+    # Transfer mutation status
+    thisSig$Driver = FALSE
+    mutatedSamples = unique(muts$sample[ muts$gene == driver ])
+    # Add prior knowledge
+    if(driver == "BRCA1") {  mutatedSamples = unique(c(mutatedSamples, brca1)) }
+    if(driver == "BRCA2") {  mutatedSamples = unique(c(mutatedSamples, brca2)) }
+    if(driver == "RAD51C") {  mutatedSamples = unique(c(mutatedSamples, rad51c)) }
+
+    thisSig$Driver[ thisSig$Samples %in% mutatedSamples ] = TRUE
+    thisSig$Driver = as.logical(thisSig$Driver)
+
+    thisSig$Gene = driver
+    return(thisSig)
+
+  } )
+
+  ## For BRCA1 with TP53BP1, RIF1 or MAD2L2
+  # Transfer mutation status
+  thisSig$Driver = FALSE
+
+  brcaHit = unique(c(muts$sample[muts$gene == "BRCA1"], brca1))
+  rescueHit = unique(muts$sample[muts$gene %in% c("TB53BP1", "RIF1", "MAD2L2")])
+  thisSig$Driver[ thisSig$Samples %in% brcaHit & thisSig$Samples %in% rescueHit ] = TRUE
+  thisSig$Driver = as.logical(thisSig$Driver)
+
+  thisSig$Gene = "BRCA1 rescued"
+  lAllDrivers[[length(lAllDrivers)+1]] = thisSig
+
+
+  dtDriverTests = data.table(do.call(rbind, lAllDrivers))
+  return(dtDriverTests)
+
+} )
+
+dtSigDrivers = rbindlist(lSignatureTests)
+dtSigDrivers
+```
+
+```{r gene_signature_results}
+## Alpha of rectangle pattern
+ALPHA=0.1
+
+## Panel C: Genes of Interest (GoI)
+#TGOI=file.path(BASE, "input/Table_tTest_Genes_of_Interest_THRESH95_NAMESAPRIL2021.rds")
+TGOI <- dtDriverExps
+#GENEDETAILS=file.path(BASE, "input/Reactome_and_Driver_genes_and_their_IDs.txt")
+GENEDETAILS <- dtGeneLookup
+REACTOMEDETAILS=fread(file = "C:/Users/smith10/Git_repo/Drews2022_CIN_Compendium/Section 7 Identification of putative signature aetiologies/Section 7.1 Linking signature activities to mutated genes/input/Reactome_genes_pathway_dictionary.txt")
+
+# Even though they might not be mutated, we show them to the reader.
+MOSTIMPORTANT=c("KRAS", "BRAF", "NOTCH1", "NF1", "SMAD4", "ARID1A", "JAK2", "POLE",
+                "MYCN", "EGFR", "ATM", "BRCA1_rescued") # "BRCA1_noRescue"
+REMOVEBRCA1NOTRESCUED = TRUE
+
+dtGenes <- GENEDETAILS
+## Load GoIs and determine genes to be plotted
+# dtGenes = fread(file = "../Drews2022_CIN_Compendium/Section 7 Identification of putative signature aetiologies/Section 7.1 Linking signature activities to mutated genes/input/Reactome_and_Driver_genes_and_their_IDs.txt")
+## Convert labels in lookup data frame
+dtGenes$Status[ grepl("oncogene", dtGenes$Status) ] = "Oncogene"
+dtGenes$Status[ grepl("tsg", dtGenes$Status) ] = "TSG"
+dtGenes$Status[ dtGenes$Status == "Ambivalent" ] = "Either"
+
+dtReact <- REACTOMEDETAILS
+dtGoI <- TGOI
+
+## Prepare dtGoI
+## Simple filtering
+# dtSigGoI = dtGoI[ dtGoI$MeanDiff > 0 & dtGoI$pAdjTTest < PVALTHRESH, ]
+
+## High-quality filtering - only positive, only highly significant results
+dtSigGoI = dtGoI[ dtGoI$MeanDiff > 0.4 & dtGoI$pAdjTTest < 0.005, ]
+allGenes = unique(c(dtSigGoI$Driver, MOSTIMPORTANT))
+
+## Remove BRCA1 if wanted
+if(REMOVEBRCA1NOTRESCUED) {
+  allGenes = allGenes[ allGenes != "BRCA1_noRescue" ]
+  dtSigGoI = dtSigGoI[ dtSigGoI$Driver != "BRCA1_noRescue", ]
+}
+
+## Save sorted output
+dtSorted = dtSigGoI[ order(dtSigGoI$Signature, -dtSigGoI$MeanDiff), ]
+#write.table(dtSorted, file.path(OUT, "Table_Positive_significant_genes_per_signature.txt"),
+#            sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+
+# Add Reactome source
+dtSubset = dtReact[ dtReact$New %in% allGenes, c("New", "ReactomePathway")]
+dtAllGenes = rbind(dtSubset, data.table("New" = allGenes[ ! allGenes %in% dtSubset$New ], "ReactomePathway" = NA))
+colnames(dtAllGenes) = c("GeneName", "Pathway")
+
+# Add driver status - Source: Bailey et al. 2018
+dtAllGenes$Status = dtGenes$Status[ match(dtAllGenes$GeneName, dtGenes$name) ]
+dtAllGenes$Status[ dtAllGenes$GeneName == 'MYCN' ] = "Oncogene"
+if(! REMOVEBRCA1NOTRESCUED) {
+  dtAllGenes$Status[ dtAllGenes$GeneName == 'BRCA1_noRescue' ] = "TSG"
+}
+dtAllGenes$Status[ dtAllGenes$GeneName == 'BRCA1_rescued' ] = "TSG"
+
+# Rename BRCA1
+if(! REMOVEBRCA1NOTRESCUED) {
+  dtAllGenes$GeneName[ dtAllGenes$GeneName == "BRCA1_noRescue" ] = "BRCA1 not rescued"
+}
+dtAllGenes$GeneName[ dtAllGenes$GeneName == "BRCA1_rescued" ] = "BRCA1 rescued"
+
+# Rename Reactome pathways
+dtAllGenes$Pathway[ dtAllGenes$Pathway == "DNA-Replication" &
+                      ! is.na(dtAllGenes$Pathway) ] = "DNA Replication"
+dtAllGenes$Pathway[ dtAllGenes$Pathway == "DNA-Repair" &
+                      ! is.na(dtAllGenes$Pathway) ] = "DNA Repair"
+dtAllGenes$Pathway[ dtAllGenes$Pathway == "Chromatin-Organisation" &
+                      ! is.na(dtAllGenes$Pathway) ] = "Chromatin Organisation"
+dtAllGenes$Pathway[ dtAllGenes$Pathway == "Cell-Cycle" &
+                      ! is.na(dtAllGenes$Pathway) ] = "Cell Cycle"
+
+# Rename TSG to tumour suppre...
+dtAllGenes$Status[ dtAllGenes$Status == "TSG" ] = "Tumour suppressor"
+
+## Plot
+# Set order for categories (gene status and Reactome pathways) and then genes
+mAllGenes = melt(dtAllGenes, id.vars = "GeneName")
+mAllGenes$value = factor(mAllGenes$value,
+                         levels = c("Tumour suppressor", "Oncogene", "Either",
+                                    "Unknown", "DNA Replication",
+                                    "DNA Repair", "Chromatin Organisation", "Cell Cycle"))
+
+datGeneOrder = rev(unique(as.character(mAllGenes$GeneName[ order(as.character(mAllGenes$value),
+                                                             as.character(mAllGenes$GeneName),
+                                                             decreasing = TRUE) ])))
+mAllGenes$GeneName = factor(mAllGenes$GeneName, levels = datGeneOrder)
+
+# Set colours
+colsStatus = c("Oncogene" = "#e41a1c", "Tumour suppressor" = "#4daf4a", "Unknown" = "#377eb8",
+               "Either" = "#ff7f00")
+
+# Only driver status in pA1
+numGenes = length(unique(mAllGenes$GeneName[ mAllGenes$variable == "Status" ]))
+numCats = length(unique(mAllGenes$value[ mAllGenes$variable == "Status" ]))
+
+
+pC1 = ggplot(mAllGenes[ mAllGenes$variable == "Status", ],
+             aes(y = value, x = GeneName, fill = value)) +
+  geom_blank() +
+  annotate("rect",
+           xmin = (seq(1, numGenes, by = 2) - 0.5),
+           xmax = (seq(1, numGenes, by = 2) + 0.5),
+           ymin = 0.5, ymax = numCats + 0.5, alpha = ALPHA) +
+  annotate("rect", xmin = 0,xmax = numGenes + 0.5,
+           ymin = (seq(1, numCats, by = 2) -0.5),
+           ymax = (seq(1, numCats, by = 2) +0.5), alpha = ALPHA) +
+  geom_tile() +
+  theme(legend.position = "none", axis.title.y = element_blank(), plot.margin = margin( t = 5, r = 5, b = 0, l = 5, "pt")) +
+  scale_x_discrete(position = "top", drop = FALSE, guide = guide_axis(angle = 90)) + scale_fill_manual(values = colsStatus) +
+  coord_equal() + xlab("Significant genes")
+
+## Only Reactome origin in pA2
+# Give BRCA1 special cases also the same Reactome pathways
+addon1 = mAllGenes[ mAllGenes$GeneName == "BRCA1", ]
+addon1$GeneName = "BRCA1 rescued"
+if(! REMOVEBRCA1NOTRESCUED) {
+  addon2 = mAllGenes[ mAllGenes$GeneName == "BRCA1", ]
+  addon2$GeneName = "BRCA1 not rescued"
+}
+
+mAllGenes = mAllGenes[ ! mAllGenes$GeneName %in% c("BRCA1 rescued", "BRCA1 not rescued"), ]
+if(! REMOVEBRCA1NOTRESCUED) {
+  mAllGenes = rbind(mAllGenes, addon1, addon2)
+} else {
+  mAllGenes = rbind(mAllGenes, addon1)
+}
+
+# Remove NA and only keept Reactome pathway entries
+mPlotC2 = mAllGenes[ mAllGenes$variable == "Pathway" & ! is.na( mAllGenes$value ), ]
+colsReactome = c("Cell Cycle" = "#8dd3c7", "Chromatin Organisation" = "#ffffb3",
+                 "DNA Repair" = "#bebada", "DNA Replication" = "#fb8072")
+numCats = length(unique(mPlotC2$value))
+pC2 = ggplot(mPlotC2, aes(y = value, x = GeneName, fill = value)) +
+  geom_blank() +
+  annotate("rect",
+           xmin = (seq(1, numGenes, by = 2) - 0.5),
+           xmax = (seq(1, numGenes, by = 2) + 0.5),
+           ymin = 0.5, ymax = numCats + 0.5, alpha = ALPHA) +
+  annotate("rect", xmin = 0,xmax = numGenes + 0.5,
+           ymin = (seq(1, numCats, by = 2) - 0.5),
+           ymax = (seq(1, numCats, by = 2) + 0.5), alpha = ALPHA) +
+  geom_tile() + coord_equal() +
+    theme(axis.title.y = element_blank(), legend.position = "none", axis.ticks.x = element_blank(),
+          axis.title.x = element_blank(), axis.text.x = element_blank(),
+          plot.margin = margin( t = 5, r = 5, b = 0, l = 5, "pt")) +
+  scale_fill_manual(values = colsReactome) + scale_x_discrete(drop = FALSE)
+
+
+## Signature vs genes of interest
+# Change BRCA1 names in dtSigGoI (comes directly from hardrive) as well
+dtSigGoI$Driver[ dtSigGoI$Driver == "BRCA1_noRescue" ] = "BRCA1 not rescued"
+dtSigGoI$Driver[ dtSigGoI$Driver == "BRCA1_rescued" ] = "BRCA1 rescued"
+dtSigGoI$Status = dtAllGenes$Status[ match(dtSigGoI$Driver, dtAllGenes$GeneName) ]
+dtSigGoI$Driver = factor(dtSigGoI$Driver, levels = datGeneOrder)
+dtSigGoI$Signature = factor(dtSigGoI$Signature, levels = rev(paste0("CS", 1:19)))
+
+## Version with mean difference in colour and point shape indicating number of mutated samples
+dtSigGoI$SampleCat = cut(dtSigGoI$SampsMut, breaks = c(0, 10, 100, 500, 6000), labels = c("<10", "<100", "<500", ">500"), include.lowest = TRUE)
+
+
+# Some mutated genes are associated with mean shifts of larger than 1. Put in upper limit.
+dtPlotC3 = dtSigGoI
+dtPlotC3$MeanDiff[ dtPlotC3$MeanDiff > 1 ] = 1.1
+numCats = length(levels(dtPlotC3$Signature))
+pC3 = ggplot(dtPlotC3[!is.na(dtPlotC3$Signature),], aes(y = Signature, x = Driver, colour = MeanDiff, shape = SampleCat)) +
+  geom_blank() +
+  annotate("rect",
+           xmin = (seq(1, numGenes, by = 2) - 0.5),
+           xmax = (seq(1, numGenes, by = 2) + 0.5),
+           ymin = 0.5, ymax = numCats + 0.5, alpha = ALPHA) +
+  annotate("rect", xmin = 0,xmax = numGenes + 0.5,
+           ymin = (seq(1, numCats, by = 2) - 0.5),
+           ymax = (seq(1, numCats, by = 2) + 0.5), alpha = ALPHA) +
+  geom_point(size = 2.4) + scale_shape_manual( values = c(16,17,15,7) ) +
+  theme(axis.text.x = element_blank(), axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(), axis.title.y = element_blank(),
+        plot.margin = margin( t = 5, r = 5, b = 5, l = 5, "pt")) +
+  scale_x_discrete(drop = FALSE) + scale_y_discrete(drop = FALSE) +
+  scale_colour_viridis_c(rescaler = function(x, to = c(0, 1), from = NULL) {
+    ifelse(x<1, scales::rescale(x, to = to,from = c(min(x, na.rm = TRUE), 1)), 1)},
+    breaks = seq(0,1, by = 0.25), labels = c(seq(0,0.75,by = 0.25), ">1")) +
+   guides(fill = guide_colourbar(barwidth = 0.5, barheight = 15)) + coord_equal() +
+  labs(colour = "Mean\ndifference", shape = "Number of\nsamples", y = "CIN signatures")
+
+#saveRDS(dtPlotC3, file.path(OUT, "Supp_Table_Mutated_genes.rds"))
+theme_set(theme_tufte())
+
+pC = pC1 / pC2 / pC3
+
+pC
+```
+
+### Sig by cancer heatmap
+
+```{r sigByCancer}
+
+ACTIVITYTHRESHOLD = 0.5
+
+## Load data
+exp=ThreshNormaliseNewActs_NewSig_NewMix_ordered
+meta=meta.data
+
+## Prepare metadata file
+metaStudy = meta[ ! is.na(meta$dCIN), ]
+dtMeta = data.table(table(metaStudy$cancer_type))
+
+## Prepare activities
+dtExp = data.table(melt(exp))
+colnames(dtExp) = c("Sample", "Signature", "Exposure")
+dtExp$Cancer = meta$cancer_type[ match(dtExp$Sample, meta$name) ]
+
+## Summarise active samples per cancer type
+dtActive = dtExp[ dtExp$Exposure > 0,] 
+dtSummary = data.table(table(dtActive$Signature, dtActive$Cancer))
+
+
+### Plot Number 1: Binary Heatmap
+dtSummary$Prop = dtSummary$N / dtMeta$N[ match(dtSummary$V2, dtMeta$V1) ]
+dtSummary$Active = dtSummary$Prop > ACTIVITYTHRESHOLD
+
+## Prepare plot
+dtSummary$V1 = factor(dtSummary$V1, levels = rev(colnames(exp)))
+
+pOut = ggplot(dtSummary, aes(x = V2, y = V1, fill = Active)) + geom_tile(width = 0.9, height = 0.9) +
+  scale_x_discrete(position = "top", guide = guide_axis(angle = -90)) +
+  scale_fill_manual(values = c("white", "grey30")) + 
+  theme(legend.position = "none", axis.text.y = element_blank(), axis.title.y = element_blank(),
+        axis.line.x = element_line(size = 0.5), axis.ticks = element_line(size = 0.5), 
+        axis.ticks.length.x = unit(.1, "cm"), plot.margin = unit(c(0, 0, 0, 0), "null")) +
+  labs(x = "TCGA cancer types") + coord_capped_cart(top = "both") 
+
+### Plot Number 2: Four activity categories
+BREAKS = c(0, 0.05, 0.25, 0.5, 0.75, 1)
+LABELS = c("0-5%", "5-25%", "25-50%", "50-75%", ">75%" )
+dtSummary$Cut = cut(dtSummary$Prop, breaks = BREAKS, labels = LABELS, include.lowest = TRUE)
+
+pOut2 = ggplot(dtSummary, aes(x = V2, y = V1, fill = Cut)) + geom_tile(width = 0.9, height = 0.9) +
+  scale_x_discrete(position = "top", guide = guide_axis(angle = -90)) +
+  # scale_fill_manual(values = c("white", "lightskyblue1", "deepskyblue1", "deepskyblue3", "deepskyblue4")) +
+  scale_fill_manual(values = c("white", brewer.pal(4, "Blues"))) +
+  # scale_fill_brewer(palette = "Blues") +
+  theme(axis.text.y = element_blank(), axis.title.y = element_blank(),
+        axis.line.x = element_line(size = 0.5), axis.ticks = element_line(size = 0.5), 
+        axis.ticks.length.x = unit(.1, "cm"), plot.margin = unit(c(0, 0, 0, 0), "null"),) +
+  labs(x = "TCGA cancer types") + coord_capped_cart(top = "both")
+
+## Put legend in its own figure to not mess with figure dimensions
+#https://github.com/hadley/ggplot2/wiki/Share-a-legend-between-two-ggplot2-graphs
+getLegend = function(a.gplot) {
+  tmp = ggplot_gtable(ggplot_build(a.gplot))
+  leg = which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend = tmp$grobs[[leg]]
+  
+  return(legend)
+}
+
+myLegend = getLegend(pOut2)
+pLegend = grid.arrange(arrangeGrob(myLegend))
+
+# Now remove legend
+pOut2 = pOut2 + theme(legend.position = "none")
+
+#cairo_pdf(file.path(OUTPLOTS, "Figure_2_Aetiologies_heatmap.pdf"), width = 67.7/25.4, height = 117.5/25.4)
+print(pOut2); dev.off()
 ```
 
 ## HRD Clinical classifier and coxPH models
@@ -1756,10 +2310,10 @@ dtOV$Age = dtSurvOV$AgeY[ match(dtOV$Sample, dtSurvOV$Name) ]
 dtOV$Race = dtSurvOV$Race[ match(dtOV$Sample, dtSurvOV$Name) ]
 dtOV$TS = dtSurvOV$TS[ match(dtOV$Sample, dtSurvOV$Name) ]
 
-resCoxOS2 = survival::coxph(survival::Surv(OS.time, OS) ~ CN1 + CN2 + CN3 + CN4 + CN5 + CN6 + CN7 + CN8 + CN9 + CN10 + CN11 + CN12 + CN13 + CN14 + CN15 + CN16 + CN17 + CN18 + CN19 + Age + Race + TS, data =  dtOV)
+resCoxOS2 = survival::coxph(survival::Surv(OS.time, OS) ~ CS1 + CS2 + CS3 + CS4 + CS5 + CS6 + CS7 + CS8 + CS9 + CS10 + CS11 + CS12 + CS13 + CS14 + CS15 + CS16 + CS17 + CS18 + CS19 + Age + Race + TS, data =  dtOV)
 pCoxOS2 = survminer::ggforest(resCoxOS2, data = dtOV, main = "Cox HR model for TCGA-OV OS")
 
-resCoxPFI2 = survival::coxph(survival::Surv(PFI.time, PFI) ~ CN1 + CN2 + CN3 + CN4 + CN5 + CN6 + CN7 + CN8 + CN9 + CN10 + CN11 + CN12 + CN13 + CN14 + CN15 + CN16 + CN17 + CN18 + CN19 + Age + Race + TS, data =  dtOV)
+resCoxPFI2 = survival::coxph(survival::Surv(PFI.time, PFI) ~ CS1 + CS2 + CS3 + CS4 + CS5 + CS6 + CS7 + CS8 + CS9 + CS10 + CS11 + CS12 + CS13 + CS14 + CS15 + CS16 + CS17 + CS18 + CS19 + Age + Race + TS, data =  dtOV)
 pCoxPFI2 = survminer::ggforest(resCoxPFI2, data = dtOV, main = "Cox HR model for TCGA-OV PFI")
 
 #pCoxOS
