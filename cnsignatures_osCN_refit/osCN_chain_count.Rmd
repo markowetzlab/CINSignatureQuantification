@@ -1590,13 +1590,14 @@ Drews2022_v2_TCGA_Signature_Thresholds
 
 ## Signature defs
 Drews2022_v2_TCGA_Signatures <- osCN_new_sigDef[order(match(rownames(osCN_new_sigDef),prop_ordering)),]
-rownames(Drews2022_v2_TCGA_Signatures) <- mapping_file_ordered$drews2022_V2[match(prop_ordering,mapping_file_ordered$name)]
+rmlst <- length(mapping_file_ordered$drews2022_V2[match(prop_ordering,mapping_file_ordered$name)])
+rownames(Drews2022_v2_TCGA_Signatures) <- mapping_file_ordered$drews2022_V2[match(prop_ordering,mapping_file_ordered$name)][-rmlst]
 head(Drews2022_v2_TCGA_Signatures)
 
 ## Signature act scaling
 sigActorderingVec <- order(match(colnames(ThreshNormaliseNewActs_NewSig_NewMix),prop_ordering))
 ThreshNormaliseNewActs_NewSig_NewMix_ordered <- ThreshNormaliseNewActs_NewSig_NewMix[,sigActorderingVec]
-colnames(ThreshNormaliseNewActs_NewSig_NewMix_ordered) <- mapping_file_ordered$drews2022_V2[match(prop_ordering,mapping_file_ordered$name)]
+colnames(ThreshNormaliseNewActs_NewSig_NewMix_ordered) <- mapping_file_ordered$drews2022_V2[match(prop_ordering,mapping_file_ordered$name)][-rmlst]
 head(ThreshNormaliseNewActs_NewSig_NewMix_ordered) # Drews2022_TCGA_v2_SignatureActs (not exported)
 
 ## scaling variables
@@ -2278,7 +2279,7 @@ pLegend = grid.arrange(arrangeGrob(myLegend))
 pOut2 = pOut2 + theme(legend.position = "none")
 
 #cairo_pdf(file.path(OUTPLOTS, "Figure_2_Aetiologies_heatmap.pdf"), width = 67.7/25.4, height = 117.5/25.4)
-print(pOut2); dev.off()
+print(pOut2)#; dev.off()
 ```
 
 ## HRD Clinical classifier and coxPH models
