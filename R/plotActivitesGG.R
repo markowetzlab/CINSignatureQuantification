@@ -1,4 +1,4 @@
-#' plotActivities
+#' plotActivitiesGG
 #'
 #' Plot the copy number signature activities for a given SigQuant class object
 #' containing copy number signature activities/exposures. Default ordering by
@@ -18,14 +18,13 @@
 #'   cnobj <- quantifyCNSignatures(t478)
 #'   activities <- plotActivities(cnobj,type="threshold")
 #' @seealso [getActivities()]
-#' @export plotActivities
+#' @export plotActivitiesGG
 #'
-plotActivities <- function(object=NULL,type="threshold",cols=NULL){
+plotActivitiesGG <- function(object,type="threshold",cols=NULL){
     if(is.null(object)){
         stop("No object provided")
     }
-
-    if(!inherits(x = object,what = "SigQuant",which = F)){
+    if(!inherits(object,"SigQuant")){
         stop("Object is not of class SigQuant")
     }
 
@@ -87,29 +86,37 @@ plotActivities <- function(object=NULL,type="threshold",cols=NULL){
 
     }
 
-    clms <- 1
-    l.pos <- -0.1
-
-    if(nrow(plotdata) > 1){
-        plotdata <- plotdata[order(plotdata[,1],decreasing = T),]
+    ## allow for single sample plotting
+    if(ncol(as.data.frame(plotdata)) == 1){
+        plotdata <- t(plotdata)
+        rownames(plotdata) <- "sample"
     }
-    tabl <- t(as.matrix(plotdata))
 
-    graphics::par(mar=c(5, 4, 4, 8), xpd=TRUE)
-    graphics::barplot(tabl,
-            main = paste0("Signature activities (","method: ",method,")"),
-            col = cols,
-            xlab = "sample",
-            names.arg=rep("",ncol(tabl)),
-            ylab = paste0("activity (",type,")"),
-            axes=TRUE)
-    graphics::legend(x= "topright",
-           inset=c(l.pos, 0),
-           legend = rownames(tabl),
-           fill=cols,
-           cex=0.7,
-           ncol=clms,
-           x.intersp = 0.5,
-           y.intersp = 0.8,
-           box.col=NA)
+    activity <- signature <- NULL
+    plotdata <- as.data.frame(plotdata) %>%
+                    tibble::rownames_to_column(var = "sample") %>%
+                    tidyr::pivot_longer(cols = 2:ncol(.),
+                                        names_to = "signature",
+                                        values_to = "activity") %>%
+                    dplyr::mutate(signature = factor(x = signature,
+                                                     levels = paste0(names(cols)))) %>%
+                    dplyr::arrange(signature,dplyr::desc(activity)) %>%
+                    dplyr::mutate(sample = factor(x = sample,levels = unique(sample)))
+
+    sigPlot <- ggplot2::ggplot(plotdata) +
+                ggplot2::geom_col(ggplot2::aes(x = sample,y = activity,fill = signature),
+                                  position = ggplot2::position_fill(reverse = TRUE),color="grey20") +
+                ggplot2::scale_fill_manual(values = cols) +
+                ggplot2::scale_y_continuous(expand = c(0,0)) +
+                ggplot2::scale_x_discrete(expand = c(0,1)) +
+                ggplot2::ggtitle(label = paste0("Signature activities (","method: ",method,")")) +
+                ggplot2::ylab(label = paste0("activity (",type,")")) +
+                ggplot2::theme_bw() +
+                ggplot2::theme(legend.position = "right",
+                               panel.border = ggplot2::element_blank(),
+                               panel.grid = ggplot2::element_blank(),
+                               axis.text.x = ggplot2::element_blank(),
+                               axis.ticks.x = ggplot2::element_blank(),
+                               axis.line.y.left = ggplot2::element_line())
+    sigPlot
 }

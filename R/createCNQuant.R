@@ -55,7 +55,7 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
                                           header = T)
             segTable <- segTable[,c("chromosome","start","end","segVal","sample")]
         }
-    } else if("QDNAseqCopyNumbers" %in% class(data)){
+    } else if(inherits(data,"QDNAseqCopyNumbers")){
         segTable <- getSegTable(x = data)
     } else if(is.data.frame(data)){
         header <- colnames(data)
