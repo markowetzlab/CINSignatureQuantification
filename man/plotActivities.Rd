@@ -4,7 +4,7 @@
 \alias{plotActivities}
 \title{plotActivities}
 \usage{
-plotActivities(object, type = "threshold", cols = NULL)
+plotActivities(object = NULL, type = "threshold", cols = NULL)
 }
 \arguments{
 \item{object}{A SigQuant class object containing}

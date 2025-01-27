@@ -3,10 +3,9 @@ getCNMac<-function(abs_profiles){
     samps<-names(abs_profiles)
     for(i in samps)
     {
-
         segTab<-abs_profiles[[i]]
         colnames(segTab)[4]<-"segVal"
-
+      
         segTab$segVal[as.numeric(segTab$segVal)<0]<-0
         cn<-as.numeric(segTab$segVal)
         out<-rbind(out,cbind(ID=rep(i,length(cn)),value=cn))

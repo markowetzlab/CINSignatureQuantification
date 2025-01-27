@@ -1,5 +1,4 @@
 getSegTable<-function(x){
-
     sn<-Biobase::assayDataElement(x,"segmented")
     fd <- Biobase::fData(x)
     fd$use -> use

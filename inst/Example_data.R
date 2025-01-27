@@ -61,3 +61,8 @@ getSampleByComponent(sigAct478.drews)
 getExperiment(sigAct478.drews)
 getSamples(sigAct478.drews)
 getActivities(sigAct478.drews)
+
+# test core diffs
+## Sigs
+all(sigAct478.drews@activities$thresholdAct2 == myData.drews@activities$thresholdAct2)
+all(sigAct478.mac@activities$thresholdAct2 == myData.mac@activities$thresholdAct2)

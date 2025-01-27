@@ -38,7 +38,13 @@ calculateSampleByComponentMatrixMac = function(brECNF, UNINFPRIOR = FALSE) {
         }
 
         # Normalise densities to probabilities
-        postDatScaled = data.frame( postDatUnscaled / rowSums(postDatUnscaled) )
+        ## Added fix for circumstances where zero osCN features are recorded
+        ## Should also be applicable to other features - CINSignaturesQuantification issue #17
+        if(is.null(dim(postDatUnscaled))){
+            postDatScaled = data.frame(t(postDatUnscaled / sum(postDatUnscaled)))
+        } else {
+            postDatScaled = data.frame(postDatUnscaled / rowSums(postDatUnscaled))
+        }
         postDatScaled$Sample = thisEcnf[,1]
         matSxC = stats::aggregate(. ~ Sample, postDatScaled, sum)
         rownames(matSxC) = matSxC$Sample

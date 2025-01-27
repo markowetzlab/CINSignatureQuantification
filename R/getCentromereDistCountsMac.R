@@ -3,7 +3,6 @@ getCentromereDistCountsMac<-function(abs_profiles,centromeres,chrlen){
     samps<-names(abs_profiles)
     for(i in samps)
     {
-
         segTab<-abs_profiles[[i]]
         colnames(segTab)[4]<-"segVal"
 

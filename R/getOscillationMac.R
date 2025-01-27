@@ -7,6 +7,7 @@ getOscillationMac<-function(abs_profiles,chrlen){
         segTab<-abs_profiles[[i]]
         colnames(segTab)[4]<-"segVal"
 
+
         chrs<-unique(segTab$chromosome)
         oscCounts<-c()
         for(c in chrs)

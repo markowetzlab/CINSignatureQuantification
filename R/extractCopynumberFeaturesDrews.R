@@ -49,11 +49,11 @@ extractCopynumberFeaturesDrews = function(CN_data, cores = 1, allowedError = 0.1
 
     } else {
         # Single core usage
-        segsize<-getSegsizeDrews(CN_data)
+        segsize<-getSegsizeDrews(CN_data,rmNorm = rmNorm)
         bp10MB<-getBPnumDrews(CN_data,chrlen)
         osCN<-getOscillationDrews(CN_data,chrlen)
         bpchrarm<-getCentromereDistCountsDrews(CN_data,centromeres,chrlen)
-        changepoint<-getChangepointCNDrews(CN_data)
+        changepoint<-getChangepointCNDrews(CN_data,rmNorm = rmNorm)
         copynumber<-getCNDrews(CN_data)
 
         temp_list = list(segsize=segsize,bp10MB=bp10MB,osCN=osCN,bpchrarm=bpchrarm,changepoint=changepoint,copynumber=copynumber)

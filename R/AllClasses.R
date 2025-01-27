@@ -36,7 +36,7 @@ ExpQuant <- setClass("ExpQuant",
                                   feature.method = "character"
                      ),
                      prototype = list(experimentName = NULL,
-                                      init.date = as.character(Sys.time()),
+                                      init.date = NULL,
                                       last.modified = "NA",
                                       samples.full = NULL,
                                       samples.current = NULL,
