@@ -27,7 +27,6 @@ biocViews:
 Depends:
     R (>= 3.6.0)
 Imports:
-    base,
     Biobase (>= 2.46.0),
     data.table (>= 1.14),
     dplyr,
@@ -36,7 +35,6 @@ Imports:
     limSolve (>= 1.5.6),
     magrittr,
     methods,
-    parallel,
     stats,
     stringr (>= 1.4),
     tibble,

@@ -24,7 +24,7 @@ plotActivities <- function(object,type="threshold",cols=NULL){
     if(is.null(object)){
         stop("No object provided")
     }
-    if(!class(object) == "SigQuant"){
+    if(!inherits(object,"SigQuant")){
         stop("Object is not of class SigQuant")
     }
 

@@ -24,7 +24,7 @@ plotActivitiesGG <- function(object,type="threshold",cols=NULL){
     if(is.null(object)){
         stop("No object provided")
     }
-    if(!class(object) == "SigQuant"){
+    if(!inherits(object,"SigQuant")){
         stop("Object is not of class SigQuant")
     }
 
@@ -92,6 +92,7 @@ plotActivitiesGG <- function(object,type="threshold",cols=NULL){
         rownames(plotdata) <- "sample"
     }
 
+    activity <- signature <- NULL
     plotdata <- as.data.frame(plotdata) %>%
                     tibble::rownames_to_column(var = "sample") %>%
                     tidyr::pivot_longer(cols = 2:ncol(.),
@@ -99,11 +100,11 @@ plotActivitiesGG <- function(object,type="threshold",cols=NULL){
                                         values_to = "activity") %>%
                     dplyr::mutate(signature = factor(x = signature,
                                                      levels = paste0(names(cols)))) %>%
-                    dplyr::arrange(signature,desc(activity)) %>%
+                    dplyr::arrange(signature,dplyr::desc(activity)) %>%
                     dplyr::mutate(sample = factor(x = sample,levels = unique(sample)))
 
     sigPlot <- ggplot2::ggplot(plotdata) +
-                ggplot2::geom_col(ggplot2::aes(x = sample,y = activity,fill=signature),
+                ggplot2::geom_col(ggplot2::aes(x = sample,y = activity,fill = signature),
                                   position = ggplot2::position_fill(reverse = TRUE),color="grey20") +
                 ggplot2::scale_fill_manual(values = cols) +
                 ggplot2::scale_y_continuous(expand = c(0,0)) +

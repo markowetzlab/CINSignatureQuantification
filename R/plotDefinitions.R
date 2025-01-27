@@ -24,12 +24,12 @@ plotDefinitions <- function(object,cols=NULL,plot.dim=NULL){
         stop("No object provided, object should be a object of class SigQuant or SigQuant")
     }
 
-    if(!class(object) == c("SigQuant")){
+    if(!inherits(object,"SigQuant")){
         stop("Object is not of class SigQuant or SigQuant")
     }
 
     if(nrow(object@backup.signatures) < 1){
-        stop("No sample by component matrix")
+        stop("No siganture by component matrix")
     }
 
     method <- object@signature.model
@@ -43,12 +43,14 @@ plotDefinitions <- function(object,cols=NULL,plot.dim=NULL){
         }
     } else {
         n.components <- ncol(defs)
-        n.feats <- names(object@featFitting$model)
+        n.feats <- sort(unique(gsub(x = colnames(object@featFitting$sampleByComponent),pattern = "[0-9]+$",replacement = "")))
         cols.per.feat <- unlist(lapply(n.feats,
                                        function(x){
                                            sum(grepl(pattern = x,
                                                      x = colnames(defs)))
                                        }))
+
+
         default.cols <- c("#F8766D","#B79F00","#00BA38","#00BFC4","#619CFF","#F564E3")
         names(default.cols) <- c("segsize","changepoint","bp10MB","bpchrarm","osCN","copynumber")
         switch(method,
@@ -97,18 +99,6 @@ plotDefinitions <- function(object,cols=NULL,plot.dim=NULL){
             stop("plot.dim not numeric\n  plot.dim should be a c(n,m) vector where n x M >= number of signatures")
         }
     }
-    # graphics::par(mfrow = setGrid)
-    # for(i in rownames(defs)){
-    #     graphics::barplot(defs[i,],
-    #                       main = paste0("CN signature ",i),
-    #                       col = cols,
-    #                       xlab = "component",
-    #                       #names.arg=rep("",ncol(tabl)),
-    #                       ylim = c(0,1),
-    #                       ylab = paste0("weight (",method,")"),
-    #                       axes=TRUE)
-    # }
-    # graphics::par(mfrow = c(1,1))
 
     component <- feature <- value <- signature <- NULL
     tab <- as.data.frame(defs) %>%

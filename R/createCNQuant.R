@@ -86,7 +86,7 @@ createCNQuant <- function(data=NULL,experimentName = "defaultExperiment",build =
                               samples.current = length(segTable),
                               experimentName = experimentName))
         }
-    } else if("QDNAseqCopyNumbers" %in% class(data)){
+    } else if(inherits(data,"QDNAseqCopyNumbers")){
         segTable <- getSegTable(x = data)
         if(checkSegValRounding(segTable$segVal)){
             warning("segVal appears to be rounded, copy number signatures were

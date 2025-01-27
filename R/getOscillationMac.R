@@ -3,14 +3,10 @@ getOscillationMac<-function(abs_profiles,chrlen){
     samps<-names(abs_profiles)
     for(i in samps)
     {
-        if(class(abs_profiles)=="QDNAseqCopyNumbers")
-        {
-            segTab<-getSegTable(abs_profiles[,which(colnames(abs_profiles)==i)])
-        }else
-        {
-            segTab<-abs_profiles[[i]]
-            colnames(segTab)[4]<-"segVal"
-        }
+
+        segTab<-abs_profiles[[i]]
+        colnames(segTab)[4]<-"segVal"
+
         chrs<-unique(segTab$chromosome)
         oscCounts<-c()
         for(c in chrs)

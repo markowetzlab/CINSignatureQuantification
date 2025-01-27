@@ -16,7 +16,7 @@
 #'   cnobj <- calculateFeatures(cnobj[1:10],method="drews")
 #'   cnobj <- calculateSampleByComponentMatrix(cnobj)
 #'   plotSampleByComponent(cnobj)
-#' @seealso [getSampleByComponentGG()]
+#' @seealso [getSampleByComponent()]
 #' @export plotSampleByComponentGG
 #'
 plotSampleByComponentGG <- function(object=NULL,...){
@@ -27,8 +27,9 @@ plotSampleByComponentGG <- function(object=NULL,...){
         stop("feature fitting not calculated")
     }
 
+    component <- posterior <- NULL
     plotData <- object@featFitting$sampleByComponent
-    plotData <- apply(plotData,MARGIN = 2,FUN = function(x) (x - mean(x)) / sd(x))
+    plotData <- apply(plotData,MARGIN = 2,FUN = function(x) (x - mean(x)) / stats::sd(x))
     plotData <- as.data.frame(plotData) %>%
                     tibble::rownames_to_column("sample") %>%
                     tidyr::pivot_longer(cols = 2:ncol(.),values_to = "posterior",
@@ -41,9 +42,4 @@ plotSampleByComponentGG <- function(object=NULL,...){
                        axis.text.y = ggplot2::element_blank(),
                        axis.ticks.y = ggplot2::element_blank())
 
-
-    # stats::heatmap(x = plotData,
-    #                scale="col",
-    #                Colv = NA,
-    #                ...)
 }
