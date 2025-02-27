@@ -19,7 +19,7 @@
 #' @seealso [getDefinitions()]
 #' @export plotDefinitions
 #'
-plotDefinitions <- function(object,cols=NULL,plot.dim=NULL){
+plotDefinitions <- function(object,cols=NULL,plot.dim=NULL,normalise=FALSE){
     if(is.null(object)){
         stop("No object provided, object should be a object of class SigQuant or SigQuant")
     }
@@ -31,7 +31,8 @@ plotDefinitions <- function(object,cols=NULL,plot.dim=NULL){
     if(nrow(object@backup.signatures) < 1){
         stop("No siganture by component matrix")
     }
-
+    # check normalise arguement
+    stopifnot(logical(normalise))
     method <- object@signature.model
     defs <- object@backup.signatures
 
@@ -99,7 +100,28 @@ plotDefinitions <- function(object,cols=NULL,plot.dim=NULL){
             stop("plot.dim not numeric\n  plot.dim should be a c(n,m) vector where n x M >= number of signatures")
         }
     }
-
+    ## Include signature/feature normalisation used in paper figure
+    if(normalise){
+        ## First normalise per signature (to remove the comparable signature)
+        theseNewSigs = apply(defs, 1, function(thisSig) {
+            lSig = sapply(FEATS, function(thisFeat) {
+                theseVals = thisSig[ grepl(thisFeat, names(thisSig)) ]
+                theseNew = theseVals / sum(theseVals)
+                # Catch edge case with only zeros and no weights (produce NaN)
+                if(is.nan(sum(theseNew))) { 
+                    altNew = rep(0, length(theseNew))
+                    names(altNew) = names(theseNew)
+                    theseNew = altNew
+                }
+                # Scale by numbers of components => Final sum of vector should be five (for five features)
+                theseNew = theseNew * (length(theseNew)/NUMCOMP)
+            } )
+            vSig = unlist(lSig)
+            return(vSig)
+        } )
+        defs = t(theseNewSigs)
+        colnames(defs) = sapply(strsplit(colnames(defs), "\\."), function(x) x[[2]])
+    }
     component <- feature <- value <- signature <- NULL
     tab <- as.data.frame(defs) %>%
         tibble::rownames_to_column(var = "signature") %>%
