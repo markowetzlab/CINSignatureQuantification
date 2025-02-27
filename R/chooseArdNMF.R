@@ -52,7 +52,10 @@ chooseArdNMF <- function(runs = NULL,method="modal",k=NULL,decision="bdiv",speci
         }
 
         best_run <- select_optimal_k(subrun = subruns,decision = decision)
-
+        # minor fix if runs have tied performance to select one run
+        if(length(best_run > 1)){
+            best_run <- best_run[1]
+        }
         finalsubruns <- subruns[[best_run]]
     } else {
         if(specificRun %in% names(runs)){
