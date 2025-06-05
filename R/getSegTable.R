@@ -4,6 +4,11 @@ getSegTable<-function(x){
     fd$use -> use
     fdfiltfull<-fd[use,]
     sn<-sn[use,]
+    # Added check for inputs with single sample
+    sn <- as.data.frame(sn)
+    if(ncol(sn) == 1){
+        colnames(sn) <- colnames(x)
+    }
     segTable<-c()
     for(s in colnames(sn)){
         for(c in unique(fdfiltfull$chromosome))
