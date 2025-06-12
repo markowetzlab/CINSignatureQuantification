@@ -27,7 +27,7 @@ plotSampleByComponentGG <- function(object=NULL,...){
         stop("feature fitting not calculated")
     }
 
-    component <- posterior <- NULL
+    component <- posterior <- . <- NULL
     plotData <- object@featFitting$sampleByComponent
     plotData <- apply(plotData,MARGIN = 2,FUN = function(x) (x - mean(x)) / stats::sd(x))
     plotData <- as.data.frame(plotData) %>%

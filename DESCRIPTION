@@ -4,15 +4,15 @@ Version: 1.2.0
 Authors@R: 
     c(person(given = "Philip S",
            family = "Smith",
-           role = c("aut"),
+           role = c("cre","aut"),
            email = "philip.smith@cruk.cam.ac.uk",
            comment = c(ORCID = "0000-0002-9306-1747")),
     person(given = "Ruben M",
            family = "Drews",
-           role = c("aut", "cre"),
+           role = c("ctb"),
            email = "Ruben.Drews@cruk.cam.ac.uk",
            comment = c(ORCID = "0000-0001-7360-4970")),
-    person(given = "Univerity of Cambridge",
+    person(given = "University of Cambridge",
            role = c("cph", "fnd"),
            email = "Florian.Markowetz@cruk.cam.ac.uk",
            comment = c(ORCID = "0000-0002-2784-5308"))
@@ -50,6 +50,6 @@ License: ASL + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2.9000
 VignetteBuilder: knitr
 Config/testthat/edition: 3

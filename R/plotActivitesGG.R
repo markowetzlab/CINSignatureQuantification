@@ -92,7 +92,7 @@ plotActivitiesGG <- function(object,type="threshold",cols=NULL){
         rownames(plotdata) <- "sample"
     }
 
-    activity <- signature <- NULL
+    activity <- signature <- . <- NULL
     plotdata <- as.data.frame(plotdata) %>%
                     tibble::rownames_to_column(var = "sample") %>%
                     tidyr::pivot_longer(cols = 2:ncol(.),
@@ -103,10 +103,16 @@ plotActivitiesGG <- function(object,type="threshold",cols=NULL){
                     dplyr::arrange(signature,dplyr::desc(activity)) %>%
                     dplyr::mutate(sample = factor(x = sample,levels = unique(sample)))
 
-    sigPlot <- ggplot2::ggplot(plotdata) +
-                ggplot2::geom_col(ggplot2::aes(x = sample,y = activity,fill = signature),
-                                  position = ggplot2::position_fill(reverse = TRUE),color="grey20") +
-                ggplot2::scale_fill_manual(values = cols) +
+    sigPlot <- ggplot2::ggplot(plotdata)
+        if(type %in% c("raw","scaled")){
+            sigPlot <- sigPlot + ggplot2::geom_col(ggplot2::aes(x = sample,y = activity,fill = signature),
+                                                   position = ggplot2::position_stack(reverse = TRUE),color="grey20")
+        } else {
+            sigPlot <- sigPlot + ggplot2::geom_col(ggplot2::aes(x = sample,y = activity,fill = signature),
+                                                   position = ggplot2::position_fill(reverse = TRUE),color="grey20")
+        }
+
+    sigPlot <- sigPlot +  ggplot2::scale_fill_manual(values = cols) +
                 ggplot2::scale_y_continuous(expand = c(0,0)) +
                 ggplot2::scale_x_discrete(expand = c(0,1)) +
                 ggplot2::ggtitle(label = paste0("Signature activities (","method: ",method,")")) +

@@ -356,3 +356,25 @@ setGeneric("clinPredictionPlatinum",function(object)
 setGeneric("clinPredictionDenovo",function(object, sampTrain, sigsTrain)
     standardGeneric("clinPredictionDenovo"))
 
+#' getDefinitions
+#'
+#' @param object SigQuant object
+#' @param normalise Logical indicating whether to normalise signatures
+#'   definitions by feature and signature (default: FALSE)
+#'
+#' @returns matrix containing the signature definitions
+#' @examples
+#'   data(TCGA_478_Samples_SNP6_GOLD)
+#'   t478 <- TCGA_478_Samples_SNP6_GOLD
+#'   subsample <- unique(t478$sample)[1:10]
+#'   t478 <- t478[t478$sample %in% subsample]
+#'   cnobj <- quantifyCNSignatures(t478)
+#'   getDefinitions(cnobj)
+#'
+#' @seealso [plotDefinitions()]
+#' @export
+#' @docType methods
+#' @rdname getDefinitions-methods
+#'
+setGeneric("getDefinitions",function(object,normalise=FALSE)
+    standardGeneric("getDefinitions"))

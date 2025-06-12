@@ -1,13 +1,15 @@
 #' plotDefinitions
 #'
-#' Plot the copy number feature components for a given sample in a SigQuant class object
-#' containing computed sample by component. Default ordering by
+#' Plot the copy number feature components for a given sample in a SigQuant
+#' class object containing computed sample by component. Default ordering by
 #' decreasing exposure to signature CX1.
 #'
 #' @param object A SigQuant class object containing
 #' @param cols Vector of colours of the same length as number of copy number
 #'   components.
 #' @param plot.dim vector length two giving the plotting grid dimensions
+#' @param normalise Logical indicating whether to normalise signatures
+#'   definitions by feature and signature (default: FALSE)
 #' @return plot
 #' @examples
 #'   data(TCGA_478_Samples_SNP6_GOLD)
@@ -32,7 +34,8 @@ plotDefinitions <- function(object,cols=NULL,plot.dim=NULL,normalise=FALSE){
         stop("No siganture by component matrix")
     }
     # check normalise arguement
-    stopifnot(logical(normalise))
+    stopifnot(is.logical(normalise))
+
     method <- object@signature.model
     defs <- object@backup.signatures
 
@@ -104,17 +107,17 @@ plotDefinitions <- function(object,cols=NULL,plot.dim=NULL,normalise=FALSE){
     if(normalise){
         ## First normalise per signature (to remove the comparable signature)
         theseNewSigs = apply(defs, 1, function(thisSig) {
-            lSig = sapply(FEATS, function(thisFeat) {
+            lSig = sapply(names(featcols), function(thisFeat) {
                 theseVals = thisSig[ grepl(thisFeat, names(thisSig)) ]
                 theseNew = theseVals / sum(theseVals)
                 # Catch edge case with only zeros and no weights (produce NaN)
-                if(is.nan(sum(theseNew))) { 
+                if(is.nan(sum(theseNew))) {
                     altNew = rep(0, length(theseNew))
                     names(altNew) = names(theseNew)
                     theseNew = altNew
                 }
                 # Scale by numbers of components => Final sum of vector should be five (for five features)
-                theseNew = theseNew * (length(theseNew)/NUMCOMP)
+                theseNew = theseNew * (length(theseNew)/ncol(defs))
             } )
             vSig = unlist(lSig)
             return(vSig)
@@ -139,7 +142,7 @@ plotDefinitions <- function(object,cols=NULL,plot.dim=NULL,normalise=FALSE){
         ggplot2::geom_col(ggplot2::aes(component,value,fill=feature)) +
         ggplot2::facet_wrap(. ~ signature,nrow = n,ncol = m) +
         ggplot2::scale_fill_manual(values = featcols) +
-        ggplot2::scale_y_continuous(limits = c(0,1),expand = c(0,0)) +
+        ggplot2::scale_y_continuous(limits = c(0,max(tab$value) + 0.1),expand = c(0,0)) +
         ggplot2::ylab(paste0("weight (",method,")")) +
         ggplot2::theme_bw() +
         ggplot2::theme(legend.position = "bottom",

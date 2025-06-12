@@ -4,7 +4,7 @@
 \alias{plotDefinitions}
 \title{plotDefinitions}
 \usage{
-plotDefinitions(object, cols = NULL, plot.dim = NULL)
+plotDefinitions(object, cols = NULL, plot.dim = NULL, normalise = FALSE)
 }
 \arguments{
 \item{object}{A SigQuant class object containing}
@@ -13,13 +13,16 @@ plotDefinitions(object, cols = NULL, plot.dim = NULL)
 components.}
 
 \item{plot.dim}{vector length two giving the plotting grid dimensions}
+
+\item{normalise}{Logical indicating whether to normalise signatures
+definitions by feature and signature (default: FALSE)}
 }
 \value{
 plot
 }
 \description{
-Plot the copy number feature components for a given sample in a SigQuant class object
-containing computed sample by component. Default ordering by
+Plot the copy number feature components for a given sample in a SigQuant
+class object containing computed sample by component. Default ordering by
 decreasing exposure to signature CX1.
 }
 \examples{
