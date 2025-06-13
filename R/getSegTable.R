@@ -20,7 +20,8 @@ getSegTable<-function(x){
                     segValue <- sn.rle$value[s]
                     c(fdfilt$chromosome[starts[s]], from, to, segValue)
                 }) -> segtmp
-                segTableRaw <- data.frame(matrix(unlist(segtmp), ncol=4, byrow=T),sample = rep(s,times=nrow(matrix(unlist(segtmp), ncol=4, byrow=T))),stringsAsFactors=F)
+                segTableRaw <- data.frame(matrix(unlist(segtmp), ncol=4, byrow=T),
+                                          sample = rep(s,times=nrow(matrix(unlist(segtmp), ncol=4, byrow=T))),stringsAsFactors=F)
                 segTable<-rbind(segTable,segTableRaw)
             }
         }
