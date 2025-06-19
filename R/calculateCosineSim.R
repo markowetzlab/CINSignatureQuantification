@@ -1,5 +1,7 @@
 #' calculateCosineSim
 #'
+#' MAKE into METHOD
+#'
 #' Function to compute cosine similarity between various input types and
 #' additionally perform permutation testing for cosine similarity significance
 #' testing.

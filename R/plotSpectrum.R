@@ -25,7 +25,7 @@ plotSpectrum <- function(object,sample=NULL,cols=NULL){
         stop("No object provided, object should be a object of class CNQuant or SigQuant")
     }
 
-    if(!class(object) %in% c("CNQuant","SigQuant")){
+    if(!inherits(object,c("CNQuant","SigQuant"))){
         stop("Object is not of class CNQuant or SigQuant")
     }
 
