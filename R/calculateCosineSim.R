@@ -1,7 +1,5 @@
 #' calculateCosineSim
 #'
-#' MAKE into METHOD
-#'
 #' Function to compute cosine similarity between various input types and
 #' additionally perform permutation testing for cosine similarity significance
 #' testing.
@@ -16,7 +14,6 @@
 #' @returns Either a vector, matrix, or list depending on input and 'perm' option
 #' @export
 #'
-#' @examples
 calculateCosineSim <- function(x=NULL,y=NULL,perm=FALSE,nperms=1000,alternative="two.sided"){
 
     if(is.null(x)){
@@ -162,4 +159,25 @@ runMatrixPermutations <- function(x,y,nperms=1000,alternative="two.sided"){
         }
     }
     return(co)
+}
+
+getMaxSimilarity <- function(x){
+
+}
+
+GiniInq <- function(x,unbiased=FALSE){
+    if(!is.numeric(x)){
+        stop("x must be numeric vector")
+    }
+    n <- length(x)
+    x.srt <- sort(x)
+    x.cumsum <- cumsum(x = x.srt)
+    res <- (n + 1 - 2 * sum(x.cumsum) / x.cumsum[n]) / n
+
+    if(unbiased){
+        w <- rep(1,time=n)
+        w <- w/sum(w)
+        res <- res * 1/(1 - sum(w^2))
+    }
+    return(res)
 }
