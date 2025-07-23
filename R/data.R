@@ -123,6 +123,18 @@ NULL
 #' @format A 7 by 36 numeric matrix
 NULL
 
+#' Macintyre2018_OV_Signatures_t
+#'
+#' Transposed Signature-by-component matrix for 7 derived signatures as used in Macintyre 2018
+#' TEMPORARY DATA
+#'
+#' @docType data
+#' @keywords datasets
+#' @name Macintyre2018_OV_Signatures_t
+#' @usage data(Macintyre2018_OV_Signatures_t)
+#' @format A 7 by 36 numeric matrix
+NULL
+
 #' Macintyre2018_OV_Signatures_normalised
 #'
 #' Signature-by-component matrix for 7 derived signatures as used in Macintyre 2018
@@ -225,4 +237,26 @@ NULL
 #' @name SIGobj.mac
 #' @usage data(SIGobj.mac)
 #' @format A CNQuant class object using the "mac" methodology
+NULL
+
+#' DrewsMacintyreMapping
+#'
+#' List of tables and matrices quantifying the similarity between
+#' Drews et al. 2022 and Mactintyre et al. 2018 CIN signature definitions and
+#' activities using computed cosine similarity across 478 TCGA gold standard samples.
+#'
+#' @details
+#'
+#' * map_drews_definitions: data.frame containing the maximum cosine similarity for Drews et al. 2022 signature definitions to each of the Macintyre et al. 2018 signature definitions.
+#' * map_mac_definitions: data.frame containing the maximum cosine similarity for Macintyre et al. 2018 signature definitions to each of the Drews et al. 2022 signature definitions.
+#' * cosine_definitions: matrix containing all-vs-all cosine similarity between Drews et al. 2022 and Macintyre et al. 2018 signature definitions.
+#' * map_drews_activity: data.frame containing the maximum cosine similarity for Drews et al. 2022 signature activities to each of the Macintyre et al. 2018 signature activities.
+#' * map_mac_activity: data.frame containing the maximum cosine similarity for Macintyre et al. 2018 signature activities to each of the Drews et al. 2022 signature activities
+#' * cosine_activity: matrix containing all-vs-all cosine similarity between Drews et al. 2022 and Macintyre et al. 2018 signature activities.
+#'
+#' @docType data
+#' @keywords datasets
+#' @name DrewsMacintyreMapping
+#' @usage data(DrewsMacintyreMapping)
+#' @format A list of length 6 containing data.frame and matrix type data
 NULL
