@@ -1,0 +1,174 @@
+THIRD-PARTY NOTICES
+====================
+
+This container image bundles the packages listed below. This image is
+provided under the terms of its MOST RESTRICTIVE component license,
+which governs the image as a whole:
+
+  ** WARNING: CINSignatureQuantification -- GAP Available Source **
+  ** License v1.0 (ASL). NON-COMMERCIAL ACADEMIC USE ONLY.        **
+
+  Source: https://github.com/markowetzlab/CINSignatureQuantification
+  Full license text: /licenses/CINSignatureQuantification-LICENSE.txt
+  The methods implemented are subject to pending patent application
+  GB 2114203.9.
+
+  By using this image in any capacity, you agree to the ASL's
+  non-commercial restriction, independent of any other license below.
+
+  If you require commercial use of this image or its outputs, contact
+  Cambridge Enterprise regarding a commercial license for
+  CINSignatureQuantification before proceeding.
+
+
+LICENSE SUMMARY BY CATEGORY
+============================
+
+1. NON-COMMERCIAL / RESTRICTED SOURCE
+--------------------------------------
+  CINSignatureQuantification .... ASL (GAP Available Source License
+                                   v1.0) - non-commercial only
+
+
+2. COPYLEFT (GPL FAMILY)
+--------------------------------------
+  backports ...................... GPL-2 | GPL-3
+  BiocParallel .................... GPL-2 | GPL-3 | BSL-1.0
+  bitops .......................... GPL (>= 2)
+  CGHbase ......................... GPL
+  CGHcall ......................... GPL
+  class ........................... GPL-2 | GPL-3
+  cluster ......................... GPL (>= 2)
+  codetools ....................... GPL
+  diagram ......................... GPL (>= 2)
+  diffobj ......................... GPL-2 | GPL-3
+  digest .......................... GPL (>= 2)
+  DiceDesign ...................... GPL-3
+  DNAcopy ......................... GPL (>= 2)
+  doParallel ...................... GPL-2
+  foreign ......................... GPL (>= 2)
+  formatR ......................... GPL
+  future.apply .................... GPL (>= 2)
+  GauPro .......................... GPL-3
+  gower ........................... GPL-3
+  highr ........................... GPL
+  htmltools ....................... GPL (>= 2)
+  httpuv .......................... GPL (>= 2) | file LICENSE
+  impute .......................... GPL-2
+  ipred ........................... GPL (>= 2)
+  knitr ........................... GPL
+  lattice ......................... GPL (>= 2)
+  lazyeval ........................ GPL-3
+  lbfgs ........................... GPL (>= 2)
+  limma ........................... GPL (>=2)
+  limSolve ........................ GPL
+  littler ......................... GPL (>= 2)
+  MASS ............................ GPL-2 | GPL-3
+  Matrix .......................... GPL (>= 2) | file LICENCE
+  mgcv ............................ GPL (>= 2)
+  mime ............................ GPL
+  miniUI .......................... GPL-3
+  nlme ............................ GPL (>= 2)
+  nnet ............................ GPL-2 | GPL-3
+  numDeriv ........................ GPL-2
+  pak ............................. GPL-3
+  prodlim ......................... GPL (>= 2)
+  progressr ....................... GPL (>= 3)
+  quadprog ........................ GPL (>= 2)
+  Rcpp ............................ GPL (>= 2)
+  rmarkdown ....................... GPL-3
+  rpart ........................... GPL-2 | GPL-3
+  shape ........................... GPL (>= 3)
+  snow ............................ GPL
+  snowfall ........................ GPL
+  spatial ......................... GPL-2 | GPL-3
+  splitfngr ....................... GPL-3
+  SQUAREM ......................... GPL (>= 2)
+  statmod ......................... GPL-2 | GPL-3
+  timechange ...................... GPL (>= 3)
+  timeDate ........................ GPL (>= 2)
+  xtable .......................... GPL (>= 2)
+
+
+3. WEAK COPYLEFT (LGPL / MPL)
+--------------------------------------
+  futile.logger ................... LGPL-3
+  futile.options ................... LGPL-3
+  future ........................... LGPL (>= 2.1)
+  globals .......................... LGPL (>= 2.1)
+  lambda.r ......................... LGPL-3
+  listenv .......................... LGPL (>= 2.1)
+  lpSolve .......................... LGPL-2
+  marray ........................... LGPL
+  mixopt ........................... LGPL (>= 3)
+  parallelly ....................... LGPL (>= 2.1)
+  R.methodsS3 ...................... LGPL (>= 2.1)
+  R.oo ............................. LGPL (>= 2.1)
+  R.utils .......................... LGPL (>= 2.1)
+  survival ......................... LGPL (>= 2)
+  data.table ....................... MPL-2.0 | file LICENSE
+
+
+4. PERMISSIVE WITH COPYRIGHT-NOTICE FILE (MIT / BSD)
+--------------------------------------
+  All packages listed below are "MIT + file LICENSE" or
+  "BSD_2_clause"/"BSD_3_clause + file LICENSE" -- permissive, no
+  redistribution restrictions beyond preserving the copyright notice:
+
+  brio, broom, bslib, cachem, callr, cli, clock, colourpicker,
+  commonmark, conflicted, cpp11, crayon, crosstalk, desc, dials,
+  docopt, dplyr, DT, evaluate, farver, fastmap, fontawesome, fs,
+  furrr, generics, ggplot2, glue, gtable, hardhat, htmlwidgets, infer,
+  isoband, jquerylib, jsonlite, later, lifecycle, lubridate, magrittr,
+  memoise, modeldata, modelenv, otel, parsnip, patchwork, pillar,
+  pkgbuild, pkgconfig, pkgload, praise, prettyunits, processx,
+  promises, ps, purrr, R6, rappdirs, recipes, rlang, rprojroot,
+  rsample, rstudioapi, S7, sass, scales, sfd, shiny, shinycssloaders,
+  shinyjs, slider, sourcetools, sparsevctrs, stringr, tailor,
+  testthat, tibble, tidymodels, tidyr, tidyselect, tinytex, tune,
+  tzdb, vctrs, viridisLite, waldo, warp, withr, workflows,
+  workflowsets, xfun, yardstick, yaml
+
+
+5. ARTISTIC-2.0 (PERMISSIVE-ISH, BIOCONDUCTOR STANDARD)
+--------------------------------------
+  Biobase, BiocGenerics, BiocManager, BiocVersion, GenomicRanges,
+  IRanges, matrixStats, S4Vectors, Seqinfo
+
+
+6. APACHE LICENSE 2.0
+--------------------------------------
+  foreach, iterators, lava, RColorBrewer, utf8 (dual w/ file LICENSE)
+
+
+7. OTHER PERMISSIVE
+--------------------------------------
+  BH .............................. BSL-1.0
+  boot ............................. Unlimited
+  KernSmooth ....................... Unlimited
+  labeling ......................... MIT | Unlimited
+
+
+8. NON-STANDARD / SEE BUNDLED FILE
+--------------------------------------
+  stringi .......................... License terms are entirely in
+                                      the package's own LICENSE file
+                                      (includes ICU-derived
+                                      components); not expressible as
+                                      a single SPDX tag. See
+                                      /licenses/stringi-LICENSE.txt.
+
+
+9. BASE R (PART OF R ITSELF, GPL-2 | GPL-3)
+--------------------------------------
+  base, compiler, datasets, graphics, grDevices, grid, methods,
+  parallel, splines, stats, stats4, tcltk, tools, utils
+  (all "Part of R 4.5.3")
+
+
+NOTE
+====
+This file was generated from installed.packages()[,c("Package","License")]
+output. It documents every package installed in this image. It is
+provided for transparency and does not itself grant or waive any
+rights under the licenses listed.
