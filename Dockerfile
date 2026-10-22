@@ -24,6 +24,7 @@ RUN Rscript -e 'BiocManager::install("QDNAseq",lib="/usr/local/lib/R/site-librar
 RUN Rscript -e 'install.packages("data.table",lib="/usr/local/lib/R/site-library/")'
 RUN Rscript -e 'install.packages("limSolve",lib="/usr/local/lib/R/site-library/")'
 RUN Rscript -e 'install.packages("stringr",lib="/usr/local/lib/R/site-library/")'
+RUN Rscript -e 'install.packages("optparse",lib="/usr/local/lib/R/site-library/")'
 RUN Rscript -e 'pak::pkg_install("markowetzlab/CINSignatureQuantification",lib="/usr/local/lib/R/site-library/",dependencies=TRUE)'
 
 RUN mkdir -p /licenses && \
